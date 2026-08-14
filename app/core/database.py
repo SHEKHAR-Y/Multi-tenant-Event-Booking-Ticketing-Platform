@@ -1,7 +1,8 @@
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, sessionmaker 
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+from app.core.config import get_settings 
 
-DB_URL =  "postgresql+psycopg2://postgres:ShekhaRpc%4029@localhost:5432/my_database_name"
+DB_URL = get_settings().database_url
 
 engine = create_engine(DB_URL)
 
