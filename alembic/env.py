@@ -8,6 +8,7 @@ from app.core.config import get_settings
 
 from app.core.database import Base
 from app.models.user import User
+from app.models.event import Event
 
 
 
@@ -17,7 +18,7 @@ config = context.config
 settings = get_settings()
 
 
-config.set_main_option("sqlalchemy.url", str(settings.database_url))
+config.set_main_option("sqlalchemy.url", str(settings.database_url).replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
