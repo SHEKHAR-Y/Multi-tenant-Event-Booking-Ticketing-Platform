@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 
-
-from schemas.event import EventCreateRequest, EventCreateResponse
+from app.schemas.event import EventCreateRequest, EventCreateResponse
+from app.core.security import oauth2_scheme
 
 router = APIRouter()
 
 @router.post("/create", response_model=EventCreateResponse, status_code=status.HTTP_201_CREATED)
-def create_event(request: Request, event_request: EventCreateRequest):
+def create_event(request: Request, event_request: EventCreateRequest, token: str = Depends(oauth2_scheme)):
     response = EventCreateResponse(
         organizer_id=event_request.organizer_id,
         title=event_request.title,

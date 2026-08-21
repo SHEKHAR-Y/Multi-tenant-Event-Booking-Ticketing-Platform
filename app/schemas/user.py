@@ -5,7 +5,7 @@ class UserLoginRequest(BaseModel):
     password: str = Field(min_length=8, max_length=16)
 
 class UserLoginResponse(BaseModel):
-    email: EmailStr = Field()
+    jwt: str = Field()
 
 class UserRegisterRequest(BaseModel):
     email: EmailStr = Field(description="user's email address")
@@ -15,4 +15,3 @@ class UserRegisterRequest(BaseModel):
 class UserRegisterResponse(BaseModel):
     email: EmailStr = Field()
     username: str = Field()
-    hashed_password: str = Field(description="hashed password of the user")

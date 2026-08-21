@@ -16,15 +16,12 @@ engine = create_engine(
 class Base(DeclarativeBase):
     pass
 
-session_local = sessionmaker(
+SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
     bind=engine
 )
 
 def get_db():
-    try:
-        with session_local as session:
-            yield session
-    finally:
-        session.close()
+    with SessionLocal() as session:
+        yield session

@@ -1,14 +1,23 @@
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Request, status, Depends
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
 
-from schemas.user import UserLoginRequest, UserLoginResponse
+from app.schemas.user import UserLoginRequest, UserLoginResponse
+from app.core.security import create_access_token
 
 router = APIRouter()
 
 
-@router.post("/login", response_model=UserLoginResponse, status_code=status.HTTP_200_OK)
-def login(request: Request, request_data: UserLoginRequest):
+@router.post("/v1/login",response_model= UserLoginResponse,status_code=status.HTTP_200_OK)
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
+    email = form_data.username
+    password = form_data.password
 
-    res = UserLoginResponse(email=request_data.email)
+    # call the service to check the passowrd is correct and check if the user exist 
 
-    return res
+    # if the user exist and correct credentials(password & email) create a jwt token and return it
+    token = create_access_token(email)
+
+    return UserLoginResponse(
+        jwt=token
+    )
