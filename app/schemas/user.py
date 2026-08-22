@@ -5,7 +5,8 @@ class UserLoginRequest(BaseModel):
     password: str = Field(min_length=8, max_length=16)
 
 class UserLoginResponse(BaseModel):
-    jwt: str = Field()
+    access_token: str
+    token_type: str = "bearer"
 
 class UserRegisterRequest(BaseModel):
     email: EmailStr = Field(description="user's email address")

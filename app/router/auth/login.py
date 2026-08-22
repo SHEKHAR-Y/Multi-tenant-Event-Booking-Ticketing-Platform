@@ -2,22 +2,26 @@ from fastapi import APIRouter, Request, status, Depends
 from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.schemas.user import UserLoginRequest, UserLoginResponse
+from sqlalchemy.orm import Session
+
+from app.schemas.user import UserLoginResponse
 from app.core.security import create_access_token
+from app.services.auth.user import login_user
+from app.core.database import get_db
 
 router = APIRouter()
 
 
-@router.post("/v1/login",response_model= UserLoginResponse,status_code=status.HTTP_200_OK)
-def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends()):
+@router.post("/v1/login", response_model= UserLoginResponse, status_code=status.HTTP_200_OK)
+def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     email = form_data.username
     password = form_data.password
 
     # call the service to check the passowrd is correct and check if the user exist 
-
-    # if the user exist and correct credentials(password & email) create a jwt token and return it
-    token = create_access_token(email)
+    token = login_user(email, password, db)
 
     return UserLoginResponse(
-        jwt=token
+        access_token=token,
+        token_type="bearer"
     )
+

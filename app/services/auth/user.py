@@ -1,10 +1,12 @@
+from sqlalchemy.orm import Session
+
 from app.schemas.user import UserRegisterRequest, UserRegisterResponse
-from app.core.exceptions import UserAlreadyExists
+from app.core.exceptions import UserAlreadyExists, UserNotFound
 from app.core.security import hash_password
 from app.models.user import User
 from app.repository.user import UserRepository
+from app.core.security import verify_password, create_access_token
 
-from sqlalchemy.orm import Session
 
 
 def register_user(user: UserRegisterRequest, db: Session) -> UserRegisterResponse: 
@@ -35,11 +37,30 @@ def register_user(user: UserRegisterRequest, db: Session) -> UserRegisterRespons
         username=new_user.full_name
     )
 
+def login_user(email: str, password: str, db: Session) -> str:
+    user = check_user_exist(email, db)
+
+    if user is None:
+        raise UserNotFound("User not found, check email and try again")
+
+    # verify the password hash
+    verify = verify_password(password, user.hashed_password)
+
+    if not verify: 
+        ... # raise exception for wrong password
+
+    # token creation and return token
+    subject = str(user.id)
+    token = create_access_token(subject)
+
+    return token
+    
 
 
 def check_user_exist(email: str, db: Session) -> User | None:
     """ user the repository exposed functions to access db and verify the user exist or not"""
     repo = UserRepository(db)
 
-    repo.get_user_by_email(email)
-    return None
+    return repo.get_user_by_email(email)
+
+    
