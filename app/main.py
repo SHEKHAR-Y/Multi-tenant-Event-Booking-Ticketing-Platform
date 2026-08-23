@@ -11,8 +11,8 @@ from app.router.auth.register import router as register
 from app.router.event.create_event import router as create_event_router
 
 # exception handling 
-from app.core.exceptions import (UserAlreadyExists, UserNotFound,InvalidTokenError,TokenExpiredError,NotFoundError)
-from app.core.exception_handlers import (user_already_exist, user_not_found, invalid_token_handler, token_expired_handler)
+from app.core.exceptions import (UserAlreadyExists, UserNotFound,InvalidTokenError,TokenExpiredError,NotFoundError, UserNotAuthorized, DatabaseUnavailableError, CustomIntegrityError)
+from app.core.exception_handlers import (user_already_exist, user_not_found, invalid_token_handler, token_expired_handler, user_not_authorized, database_unavailable, integrity_error)
 
 # setting
 from app.core.config import get_settings
@@ -32,6 +32,9 @@ app.add_exception_handler(UserAlreadyExists, user_already_exist)
 app.add_exception_handler(UserNotFound, user_not_found)
 app.add_exception_handler(InvalidTokenError, invalid_token_handler)
 app.add_exception_handler(TokenExpiredError, token_expired_handler)
+app.add_exception_handler(UserNotAuthorized, user_not_authorized)
+app.add_exception_handler(DatabaseUnavailableError, database_unavailable)
+app.add_exception_handler(CustomIntegrityError, integrity_error)
 
 
 

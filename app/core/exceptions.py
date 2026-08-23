@@ -15,6 +15,9 @@ class UserNotFound(AppError):
     def __init__(self, message):
         super().__init__(message)
 
+class UserNotAuthorized(AppError):
+    def __init__(self, message):
+        super().__init__(message)
 
 class InvalidTokenError(AppError):
     def __init__(self):
@@ -24,4 +27,13 @@ class InvalidTokenError(AppError):
 class TokenExpiredError(AppError):
     def __init__(self):
         super().__init__("Authentication token has expired")
+
+class DatabaseUnavailableError(AppError):
+    def __init__(self, message):
+        super().__init__(message)
+
+class CustomIntegrityError(AppError):
+    def __init__(self, message):
+        super().__init__(message)
+
 
