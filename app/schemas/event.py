@@ -10,7 +10,6 @@ class EventCreateRequest(BaseModel):
     venue_address: str = Field(min_length=5, max_length=200, description="Address of the venue")
     start_time: datetime = Field(description="Start time of the event in ISO 8601 format")
     end_time: datetime = Field(description="End time of the event in ISO 8601 format")
-    total_tickets: int = Field(gt=0, description="Total number of tickets")
 
 class EventCreateResponse(BaseModel):
     organizer_id: UUID = Field(description="ID of the user creating the event")
@@ -20,5 +19,4 @@ class EventCreateResponse(BaseModel):
     venue_address: str = Field(min_length=5, max_length=200, description="Address of the venue")
     start_time: datetime = Field(description="Start time of the event in ISO 8601 format")
     end_time: datetime = Field(description="End time of the event in ISO 8601 format")
-    total_tickets: int = Field(gt=0, description="Total number of tickets")
     

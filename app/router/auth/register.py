@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/register", response_model=UserRegisterResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/v1/register", response_model=UserRegisterResponse, status_code=status.HTTP_201_CREATED)
 def register(request: Request, register_data: UserRegisterRequest, db: Session = Depends(get_db)):
 
     res = register_user(register_data, db)

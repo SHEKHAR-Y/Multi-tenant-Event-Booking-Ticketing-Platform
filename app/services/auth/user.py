@@ -6,14 +6,15 @@ from app.core.security import hash_password
 from app.models.user import User
 from app.repository.user import UserRepository
 from app.core.security import verify_password, create_access_token
+from app.core.db_error_handler import handle_db_error
 
 
 
 def register_user(user: UserRegisterRequest, db: Session) -> UserRegisterResponse: 
     """ check if the user already exist using the email sent in the request """
-    if check_user_exist(user.email, db) is not None:
-        # raise exception that user already exist
-        raise UserAlreadyExists("User already Exist")
+    # if check_user_exist(user.email, db) is not None:
+    #     # raise exception that user already exist
+    #     raise UserAlreadyExists("User already Exist")
     
     # hash the password then access db to insert new user 
     hashed_password = hash_password(user.password)
@@ -26,10 +27,10 @@ def register_user(user: UserRegisterRequest, db: Session) -> UserRegisterRespons
         full_name = user.username
     )
 
-    new_user = repo.create_user(data)
-
-    # after successfull registration do commit
-    db.commit()
+    with handle_db_error(db):
+        new_user = repo.create_user(data)
+        # after successfull registration do commit
+        db.commit()
 
     # return response
     return UserRegisterResponse(

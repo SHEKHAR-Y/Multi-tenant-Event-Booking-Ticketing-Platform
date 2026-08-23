@@ -2,6 +2,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.user import User
+from app.core.db_error_handler import handle_db_error 
 
 class UserRepository:
     def __init__(self, db: Session):
@@ -12,9 +13,15 @@ class UserRepository:
 
         return self.db.scalar(statement)
 
+    def get_user_by_id(self, id: str) -> User | None :
+        statement = select(User).where(User.id == id)
+
+        return self.db.scalar(statement)
+
     def create_user(self, user: User) -> User:
         self.db.add(user)
         self.db.flush
 
         return user
-        ...
+
+    
