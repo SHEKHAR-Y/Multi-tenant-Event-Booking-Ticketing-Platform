@@ -29,7 +29,7 @@ def create_event_service(event: EventCreateRequest, token: str, db: Session) -> 
         raise UserNotAuthorized("User not authorized to perform this task")
 
     # event repo call to create the event
-    event = Event(
+    new_event = Event(
         organizer_id = result.id,
         title = event.title,
         description = event.description,
@@ -38,7 +38,7 @@ def create_event_service(event: EventCreateRequest, token: str, db: Session) -> 
         start_time = event.start_time,
         end_time = event.end_time 
     )
-    event_repo.create_event(event)
+    event_repo.create_event(new_event)
 
     db.commit()
 
