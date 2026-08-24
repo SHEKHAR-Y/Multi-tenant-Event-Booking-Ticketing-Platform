@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.schemas.user import UserLoginResponse
 from app.core.security import create_access_token
-from app.services.auth.user import login_user
+from app.services.auth.user import login_user_service
 from app.core.database import get_db
 
 router = APIRouter()
@@ -18,7 +18,7 @@ def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db
     password = form_data.password
 
     # call the service to check the passowrd is correct and check if the user exist 
-    token = login_user(email, password, db)
+    token = login_user_service(email, password, db)
 
     return UserLoginResponse(
         access_token=token,

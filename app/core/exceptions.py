@@ -15,6 +15,10 @@ class UserNotFound(AppError):
     def __init__(self, message):
         super().__init__(message)
 
+class InvalidCredentialError(AppError):
+    def __init__(self, message):
+        super().__init__(message)
+
 class UserNotAuthorized(AppError):
     def __init__(self, message):
         super().__init__(message)
