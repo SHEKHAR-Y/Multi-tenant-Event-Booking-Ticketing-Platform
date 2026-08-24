@@ -6,5 +6,5 @@ def validation_exception_handler(request: Request, exception: RequestValidationE
     # give the validation error response instead of crash
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-        content={"error": exception.errors}         
+        content={"error": exception.errors()}         
     )
