@@ -11,7 +11,7 @@ class UserLoginResponse(BaseModel):
 class UserRegisterRequest(BaseModel):
     email: EmailStr = Field(description="user's email address")
     username: str = Field(min_length=3, max_length=20)
-    password: str = Field(min_length=8, max_length=16)
+    password: str = Field(min_length=8, max_length=64)
 
 class UserRegisterResponse(BaseModel):
     email: EmailStr = Field()
