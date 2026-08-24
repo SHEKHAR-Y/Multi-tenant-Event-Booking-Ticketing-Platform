@@ -21,14 +21,14 @@ def register_user_service(user: UserRegisterRequest, db: Session) -> UserRegiste
 
     # repository call to register the user
     repo = UserRepository(db)
-    data = User(
+    new_user = User(
         email = user.email,
         hashed_password = hashed_password,
         full_name = user.username
     )
 
     with handle_db_error(db):
-        new_user = repo.create_user(data)
+        new_user = repo.create_user(new_user)
         # after successfull registration do commit
         db.commit()
 

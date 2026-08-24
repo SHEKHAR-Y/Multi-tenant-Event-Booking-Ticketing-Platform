@@ -18,10 +18,10 @@ class UserRepository:
 
         return self.db.scalar(statement)
 
-    def create_user(self, user: User) -> User:
-        self.db.add(user)
-        self.db.flush
+    def create_user(self, new_user: User) -> User:
+        self.db.add(new_user)
+        self.db.flush()
 
-        return user
+        return new_user
 
     
