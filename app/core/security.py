@@ -38,7 +38,6 @@ def create_access_token(subject: str, expires_delta: timedelta | None = None) ->
 
 # decode signed token
 def decode_access_token(token: str)-> dict:
-    ... 
     try:
         payload = jwt.decode(
             token,

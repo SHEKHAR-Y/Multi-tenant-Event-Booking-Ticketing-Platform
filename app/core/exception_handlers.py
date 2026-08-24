@@ -21,7 +21,7 @@ async def invalid_credential_error(request: Request, exc: InvalidCredentialError
         content={"error": exc.message}
     )
 
-async def user_not_authorized(requset: Request, exc: UserNotAuthorized):
+async def user_not_authorized(request: Request, exc: UserNotAuthorized):
     return JSONResponse(
         status_code=status.HTTP_403_FORBIDDEN,
         content={"error": exc.message}
