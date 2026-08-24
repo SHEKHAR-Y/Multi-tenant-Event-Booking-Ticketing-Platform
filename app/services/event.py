@@ -7,6 +7,7 @@ from app.repository.event import EventRepository
 from app.core.exceptions import UserNotFound, UserNotAuthorized
 from app.models.user import UserRole
 from app.models.event import Event
+from app.core.db_error_handler import handle_db_error
 
 def create_event_service(event: EventCreateRequest, token: str, db: Session) -> Event:
     user_repo = UserRepository(db)
@@ -38,10 +39,12 @@ def create_event_service(event: EventCreateRequest, token: str, db: Session) -> 
         start_time = event.start_time,
         end_time = event.end_time 
     )
-    event_repo.create_event(new_event)
 
-    db.commit()
+    with handle_db_error(db): 
+        event_repo.create_event(new_event)
+        db.commit()
+        db.refresh(new_event)
 
-    return event
+    return new_event
 
 

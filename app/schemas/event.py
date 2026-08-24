@@ -3,7 +3,6 @@ from datetime import datetime
 from uuid import UUID
 
 class EventCreateRequest(BaseModel):
-    organizer_id: UUID = Field(description="ID of the user creating the event")
     title: str = Field(min_length=3, max_length=100, description="Title of the event")
     description: str = Field(min_length=10, max_length=1000, description="Description of the event")
     venue_name: str = Field(min_length=2, max_length=100, description="Name of the venue")
