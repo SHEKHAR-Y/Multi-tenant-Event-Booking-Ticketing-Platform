@@ -9,9 +9,9 @@ class Settings(BaseSettings):
 
     database_url: PostgresDsn
 
-    access_token_expire_minutes: float = Field(default=False, env="access_token_expire_minutes")
-    secret_key: str = Field(default=False, env="secret_key")
-    algo: str = Field(default=False, env="algo")
+    access_token_expire_minutes: float = Field(env="access_token_expire_minutes")
+    secret_key: str = Field(env="secret_key")
+    algo: str = Field(env="algo")
 
     model_config = SettingsConfigDict(
         env_file=".env",
