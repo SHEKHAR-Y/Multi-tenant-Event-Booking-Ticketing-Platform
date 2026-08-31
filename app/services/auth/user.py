@@ -29,7 +29,7 @@ def register_user_service(user: UserRegisterRequest, db: Session) -> UserRegiste
 
     with handle_db_error(db):
         new_user = repo.create_user(new_user)
-        # after successfull registration do commit
+        # commit after successfull registration 
         db.commit()
 
     # return response

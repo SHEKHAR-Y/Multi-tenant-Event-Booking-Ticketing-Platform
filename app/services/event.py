@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+import uuid 
 
 from app.schemas.event import EventCreateRequest
 from app.core.security import decode_access_token
@@ -17,7 +18,7 @@ def create_event_service(event: EventCreateRequest, token: str, db: Session) -> 
     payload = decode_access_token(token)
 
     # from payload extract the user id entered as the subject in the token 
-    user_id = payload["sub"]  
+    user_id = uuid.UUID(payload["sub"])  
 
     # check if the user exist with the id 
     result = user_repo.get_user_by_id(user_id)
