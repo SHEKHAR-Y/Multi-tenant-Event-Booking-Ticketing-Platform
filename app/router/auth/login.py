@@ -14,11 +14,9 @@ router = APIRouter()
 
 @router.post("/v1/login", response_model= UserLoginResponse, status_code=status.HTTP_200_OK)
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    email = form_data.username
-    password = form_data.password
-
+    
     # call the service to check the passowrd is correct and check if the user exist 
-    token = login_user_service(email, password, db)
+    token = login_user_service(form_data.username, form_data.password, db)
 
     return UserLoginResponse(
         access_token=token,

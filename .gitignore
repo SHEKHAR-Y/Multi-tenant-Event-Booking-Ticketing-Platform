@@ -2,3 +2,4 @@
 .venv
 .git
 __pycache__
+.coverage

@@ -23,7 +23,9 @@ from app.core.logging_config import configure_logging
 
 configure_logging(debug=settings.debug)
 
-app = FastAPI()
+app = FastAPI(
+    title=settings.app_name
+)
 
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -41,7 +43,7 @@ app.add_exception_handler(InvalidCredentialError, invalid_credential_error)
 
 app.include_router(login, prefix="/api", tags=["Authentication"])
 app.include_router(register, prefix="/api", tags=["Authentication"])
-app.include_router(create_event_router, prefix="/api/event", tags=["Event"])
+app.include_router(create_event_router, prefix="/api", tags=["Event"])
 
 @app.get("/")
 def health_check():
