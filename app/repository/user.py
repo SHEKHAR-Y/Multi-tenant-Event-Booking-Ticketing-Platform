@@ -1,5 +1,6 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+import uuid
 
 from app.models.user import User
 from app.core.db_error_handler import handle_db_error 
@@ -13,7 +14,7 @@ class UserRepository:
 
         return self.db.scalar(statement)
 
-    def get_user_by_id(self, id: str) -> User | None :
+    def get_user_by_id(self, id: uuid.UUID) -> User | None :
         statement = select(User).where(User.id == id)
 
         return self.db.scalar(statement)
