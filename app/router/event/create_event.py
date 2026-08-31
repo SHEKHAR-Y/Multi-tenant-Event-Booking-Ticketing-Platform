@@ -9,7 +9,7 @@ from app.core.database import get_db
 
 router = APIRouter()
 
-@router.post("/create", response_model=EventCreateResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/v1/event/create", response_model=EventCreateResponse, status_code=status.HTTP_201_CREATED)
 def create_event(request: Request, event_request: EventCreateRequest, token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
 
     # check if the user exist -> ensure token is valid if yess then just fetch user from token and fetch user role -> if role is organizer
@@ -17,6 +17,7 @@ def create_event(request: Request, event_request: EventCreateRequest, token: str
 
     res =  create_event_service(event_request, token, db)
     return EventCreateResponse(
+        event_id=res.id,
         organizer_id=res.organizer_id,
         title=res.title,
         description=res.description,
