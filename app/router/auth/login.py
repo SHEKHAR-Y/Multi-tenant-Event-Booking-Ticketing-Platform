@@ -16,10 +16,7 @@ router = APIRouter()
 def login(request: Request, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     
     # call the service to check the passowrd is correct and check if the user exist 
-    token = login_user_service(form_data.username, form_data.password, db)
+    tokens = login_user_service(form_data.username, form_data.password, db)
 
-    return UserLoginResponse(
-        access_token=token,
-        token_type="bearer"
-    )
+    return tokens
 
