@@ -20,3 +20,8 @@ class UserLoginResponse(BaseModel):
 
 class UserRefreshTokenRequest(BaseModel):
     refresh_token: str = Field(description="user's refresh token")
+
+class UserRefreshTokenResponse(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
