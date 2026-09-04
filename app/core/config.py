@@ -4,15 +4,15 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "Multi-tenant-Event-Booking-Ticketing-Platform"
-    environment: str = Field(default="development", env="ENVIRONMENT")
-    debug: bool = Field(default=False, env="DEBUG")
+    environment: str = "development"
+    debug: bool = "DEBUG"
 
     database_url: PostgresDsn
 
-    access_token_expire_minutes: float = Field(env="access_token_expire_minutes")
-    refresh_token_expire_days: float = Field(env="refresh_token_expire_days")
-    secret_key: str = Field(env="secret_key")
-    algo: str = Field(env="algo")
+    access_token_expire_minutes: float = "access_token_expire_minutes"
+    refresh_token_expire_days: float = "refresh_token_expire_days"
+    secret_key: str = "secret_key"
+    algo: str = "algo"
 
     model_config = SettingsConfigDict(
         env_file=".env",
