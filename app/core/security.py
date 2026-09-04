@@ -15,6 +15,7 @@ settings = get_settings()
 
 password_hasher = PasswordHash.recommended()
 
+# hash password 
 def hash_password(password: str) -> str: 
     return password_hasher.hash(password)
 
@@ -48,7 +49,6 @@ def decode_access_token(token: str)-> dict:
         return payload
     except ExpiredSignatureError: 
         raise TokenExpiredError()
-
     except JWTError: 
         raise InvalidTokenError()
 
@@ -72,7 +72,9 @@ def create_refresh_token(subject: str, expires_delta: timedelta | None = None) -
 def decode_refresh_token(token: str) -> dict:
     try:
         payload = jwt.decode(
-            token, settings.secret_key, algorithms=[settings.algo]
+            token, 
+            settings.secret_key, 
+            algorithms=[settings.algo]
         )
         if payload["type"] != "refresh":
             raise InvalidTokenError()
@@ -81,6 +83,5 @@ def decode_refresh_token(token: str) -> dict:
         raise InvalidTokenError()
     except ExpiredSignatureError: 
             raise TokenExpiredError()
-    
     except JWTError: 
             raise InvalidTokenError()
