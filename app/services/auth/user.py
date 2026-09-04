@@ -80,6 +80,9 @@ def check_user_exist_by_id_service(id: uuid.UUID, db: Session) -> User | None:
 
 
 def refresh_access_token_service(refresh_token: str, db: Session) -> UserLoginResponse:
+    # check if the refresh token is provided
+    if not refresh_token :
+        raise InvalidCredentialError("Refresh token is required")
 
     # decode the refresh token and get the user_id 
     payload = decode_refresh_token(refresh_token)
