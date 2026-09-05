@@ -56,17 +56,17 @@ def decode_access_token(token: str)-> dict:
 def create_refresh_token(subject: str, expires_delta: timedelta | None = None) -> str:
     now = datetime.now(timezone.utc)
     expiry = now + (expires_delta or timedelta(days=settings.refresh_token_expire_days))
-
+    jti = str(uuid.uuid4())
     to_encode = {
         "sub": subject,
         "iat": now,
         "exp": expiry,
-        "jti": str(uuid.uuid4()),
+        "jti": jti,
         "type": "refresh"
     }
 
     encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algo)
-    return encoded_jwt
+    return encoded_jwt, jti, expiry
 
 # decode signed refresh token
 def decode_refresh_token(token: str) -> dict:
