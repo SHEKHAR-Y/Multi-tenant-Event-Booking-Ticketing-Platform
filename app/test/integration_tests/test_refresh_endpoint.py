@@ -76,6 +76,6 @@ def test_refresh_token_success(test_client):
         "/api/v1/refresh_access_token",
         json=refresh_request_payload
     )
-
+    # check if the old access token != new access token
     assert refresh_endpoint_response.status_code == 201
 
