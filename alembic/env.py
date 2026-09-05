@@ -9,6 +9,7 @@ from app.core.config import get_settings
 from app.core.database import Base
 from app.models.user import User
 from app.models.event import Event
+from app.models.refresh_token import RefreshToken
 
 
 
