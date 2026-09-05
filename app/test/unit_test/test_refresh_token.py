@@ -16,7 +16,7 @@ def test_decode_refresh_token():
     mock_user_id = uuid.uuid4() # used as the subject encoded in the token 
     
     subject = str(mock_user_id) 
-    test_token = create_refresh_token(subject=subject)
+    test_token, test_jti, test_expiry = create_refresh_token(subject=subject)
     payload = decode_refresh_token(test_token) 
     assert payload["sub"] == subject
     assert payload["type"] == "refresh"
@@ -25,7 +25,7 @@ def test_decode_refresh_token_tampered_token():
     mock_user_id = uuid.uuid4() # used as the subject encoded in the token 
     
     subject = str(mock_user_id) 
-    test_token = create_refresh_token(subject=subject)
+    test_token, test_jti, test_expiry = create_refresh_token(subject=subject)
     # Modify the token to simulate tampering
     test_token = test_token[:-1] + "invalid"
     with pytest.raises(InvalidTokenError):
@@ -35,7 +35,7 @@ def test_decode_refresh_token_expired_token():
     mock_user_id = uuid.uuid4() # used as the subject encoded in the token 
     
     subject = str(mock_user_id) 
-    test_token = create_refresh_token(subject=subject, expires_delta=timedelta(-1))  # Set expiration in the past
+    test_token, test_jti, test_expiry = create_refresh_token(subject=subject, expires_delta=timedelta(-1))  # Set expiration in the past
     with pytest.raises(TokenExpiredError):
         decode_refresh_token(test_token)
 
