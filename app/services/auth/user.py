@@ -126,12 +126,12 @@ class UserService:
 
         if check_user is None:
             raise UserNotFound("User not found")
-
-        if not old_refresh_token_object: 
-            raise InvalidCredentialError("invalid refresh token")
         
         # fetch the current refresh token details from the db 
         old_refresh_token_object = self.fetch_refresh_token_from_db_service(jti=jti)
+
+        if not old_refresh_token_object: 
+                    raise InvalidCredentialError("invalid refresh token")
 
         # extract family id
         family_id = old_refresh_token_object.family_id
