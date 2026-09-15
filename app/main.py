@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.exceptions import RequestValidationError 
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -24,6 +24,9 @@ from app.core.logging_config import configure_logging
 
 configure_logging(debug=settings.debug)
 
+# rate limiting 
+from app.dependencies.rate_limit import rate_limit
+
 app = FastAPI(
     title=settings.app_name
 )
@@ -47,6 +50,6 @@ app.include_router(refresh_token_router, prefix="/api", tags=["Authentication"])
 
 app.include_router(create_event_router, prefix="/api", tags=["Event"])
 
-@app.get("/")
+@app.get("/", dependencies=[Depends(rate_limit(requests=5, window_seconds=60))])
 def health_check():
     return {"message": "API is healthy and running!"}
