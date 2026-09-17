@@ -29,3 +29,5 @@ class Event(Base):
     status: Mapped[EventStatus] = mapped_column(Enum(EventStatus), nullable=False, default=EventStatus.PUBLISHED)
     created_at: Mapped[datetime] = mapped_column( DateTime(timezone=True),nullable=False,server_default=func.now(),)
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True),nullable=False,server_default=func.now(),onupdate=func.now())
+
+    seats: Mapped[list["Seat"]] = relationship(back_populates="events")
