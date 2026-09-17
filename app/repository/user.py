@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 import uuid
 
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.refresh_token import RefreshToken
 
 from app.core.db_error_handler import handle_db_error 
@@ -53,4 +53,9 @@ class UserRepository:
     def revoke_refresh_tokens_with_same_family(self, family_id: uuid.UUID):
         statement = (update(RefreshToken).where(RefreshToken.family_id == family_id).values(is_revoked=True))
         self.db.execute(statement)
+        self.db.flush()
+
+    def change_role_from_customer_to_organizer(self, user_id: uuid.UUID):
+        statement = (update(User).where(User.id == user_id).values(role=UserRole.ORGANIZER))
+        self.db.execute(statement=statement)
         self.db.flush()

@@ -25,3 +25,7 @@ class UserRefreshTokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
+
+class UserRoleChangeResponse(BaseModel):
+    email: EmailStr
+    role: str

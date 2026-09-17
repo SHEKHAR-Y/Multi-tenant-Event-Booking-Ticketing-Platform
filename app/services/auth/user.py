@@ -182,3 +182,12 @@ class UserService:
         with handle_db_error(self.db):
             self.repo.revoke_refresh_tokens_with_same_family(family_id=family_id) 
             self.db.commit()
+
+    def change_user_role_customer_to_organizer(self, user: User) -> User | None:
+        with handle_db_error(self.db):
+            self.repo.change_role_from_customer_to_organizer(user_id=user.id)
+            self.db.commit()
+            self.db.refresh(user)
+            return user
+
+        return None
