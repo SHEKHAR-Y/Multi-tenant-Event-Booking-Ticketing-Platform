@@ -1,6 +1,6 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
-from app.core.exceptions import InvalidTokenError, TokenExpiredError, UserAlreadyExists, UserNotFound, UserNotAuthorized, DatabaseUnavailableError, CustomIntegrityError, InvalidCredentialError
+from app.core.exceptions import InvalidTokenError, TokenExpiredError, UserAlreadyExists, UserNotFound, UserNotAuthorized, DatabaseUnavailableError, CustomIntegrityError, InvalidCredentialError, EventNotFound
 
 
 async def user_already_exist(request: Request, exc: UserAlreadyExists):
@@ -50,5 +50,11 @@ async def database_unavailable(request: Request, exc: DatabaseUnavailableError):
 async def integrity_error(request: Request, exc: CustomIntegrityError):
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
+        content={"error": exc.message}
+    )
+
+async def event_not_found_handler(request: Request, exc: EventNotFound):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
         content={"error": exc.message}
     )

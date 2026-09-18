@@ -40,4 +40,6 @@ class CustomIntegrityError(AppError):
     def __init__(self, message):
         super().__init__(message)
 
-
+class EventNotFound(AppError):
+    def __init__(self, message):
+        super().__init__(message)

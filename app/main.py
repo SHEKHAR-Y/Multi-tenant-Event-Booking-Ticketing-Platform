@@ -11,10 +11,11 @@ from app.router.auth.refresh_token import router as refresh_token_router
 from app.router.auth.change_role import router as change_role_router
 
 from app.router.event.create_event import router as create_event_router
+from app.router.event.create_event_seat import router as create_event_seat_router
 
 # exception handling 
-from app.core.exceptions import (UserAlreadyExists, UserNotFound,InvalidTokenError,TokenExpiredError,NotFoundError, UserNotAuthorized, DatabaseUnavailableError, CustomIntegrityError, InvalidCredentialError)
-from app.core.exception_handlers import (user_already_exist, user_not_found, invalid_token_handler, token_expired_handler, user_not_authorized, database_unavailable, integrity_error, invalid_credential_error)
+from app.core.exceptions import (UserAlreadyExists, UserNotFound,InvalidTokenError,TokenExpiredError,NotFoundError, UserNotAuthorized, DatabaseUnavailableError, CustomIntegrityError, InvalidCredentialError, EventNotFound)
+from app.core.exception_handlers import (user_already_exist, user_not_found, invalid_token_handler, token_expired_handler, user_not_authorized, database_unavailable, integrity_error, invalid_credential_error, event_not_found_handler)
 
 # setting
 from app.core.config import get_settings
@@ -43,6 +44,7 @@ app.add_exception_handler(UserNotAuthorized, user_not_authorized)
 app.add_exception_handler(DatabaseUnavailableError, database_unavailable)
 app.add_exception_handler(CustomIntegrityError, integrity_error)
 app.add_exception_handler(InvalidCredentialError, invalid_credential_error)
+app.add_exception_handler(EventNotFound, event_not_found_handler)
 
 
 app.include_router(register, prefix="/api", tags=["Authentication"])
@@ -51,6 +53,7 @@ app.include_router(refresh_token_router, prefix="/api", tags=["Authentication"])
 app.include_router(change_role_router, prefix="/api", tags=["Authentication"])
 
 app.include_router(create_event_router, prefix="/api", tags=["Event"])
+app.include_router(create_event_seat_router, prefix="/api", tags=["Event"])
 
 @app.get("/", dependencies=[Depends(rate_limit(requests=5, window_seconds=60))])
 def health_check():
