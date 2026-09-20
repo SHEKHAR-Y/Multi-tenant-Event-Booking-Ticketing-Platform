@@ -1,0 +1,7 @@
+.git/
+.pytest_cache/
+.venv/
+.coverage
+.env
+.env.example
+.gitignore
