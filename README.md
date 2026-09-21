@@ -56,7 +56,7 @@ Request
    │
    ▼
 ┌─────────┐     ┌─────────┐     ┌────────────┐     ┌──────────────┐
-│  Router  │ ──▶ │ Service │ ──▶ │ Repository │ ──▶ │  PostgreSQL  │
+│  Router │ ──▶ │ Service │ ──▶ │ Repository │ ──▶ │  PostgreSQL  │
 └─────────┘     └─────────┘     └────────────┘     └──────────────┘
                      │
                      ▼
