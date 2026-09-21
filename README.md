@@ -119,7 +119,7 @@ new family_id ──┬─▶ refresh_token_v1 (family_id=F1)
         POST /refresh (token_v1)
                 │
         ┌───────┴────────┐
-        │ token unused?   │──No──▶ REVOKE entire family F1 (reuse/theft detected)
+        │ token unused?  │──No──▶ REVOKE entire family F1 (reuse/theft detected)
         └───────┬────────┘
                 │ Yes
                 ▼
