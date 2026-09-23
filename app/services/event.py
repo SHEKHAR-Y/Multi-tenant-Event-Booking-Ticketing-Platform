@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
 
-import uuid 
+from uuid import UUID, uuid4 
 
 from app.core.security import decode_access_token
 from app.core.exceptions import UserNotFound, UserNotAuthorized, EventNotFound
 from app.core.db_error_handler import handle_db_error
 
-from app.schemas.event import EventCreateRequest
+from app.schemas.event import EventCreateRequest, EventResponse
 from app.schemas.seat import BulkSeatCreationRequest
 
 from app.repository.user import UserRepository
@@ -14,13 +14,14 @@ from app.repository.event import EventRepository
 
 from app.models.user import UserRole, User
 from app.models.event import Event
+from app.models.seat import Seat
 
 class EventService:
     def __init__(self, db: Session):
         self.db = db
+        self.repo = EventRepository(self.db)
 
     def create_event_service(self, event: EventCreateRequest, current_user: User) -> Event:
-        event_repo = EventRepository(self.db)
 
         # check if the user role is organizer
         if current_user.role is not UserRole.ORGANIZER : 
@@ -38,14 +39,13 @@ class EventService:
         )
 
         with handle_db_error(self.db): 
-            event_repo.create_event(new_event)
+            self.repo.create_event(new_event)
             self.db.commit()
             self.db.refresh(new_event)
 
         return new_event
 
     def create_event_seats_in_bulk(self, current_user: User, seat_details: BulkSeatCreationRequest) -> bool:
-        event_repo = EventRepository(self.db)
 
         current_user_id = current_user.id
         event_id = seat_details.event_id
@@ -56,9 +56,10 @@ class EventService:
             raise UserNotAuthorized("User not authorized to perform this task")
 
         # check if the event exist
-        event = event_repo.get_event_by_id(event_id)
-        if event is None:
-            raise EventNotFound("no event exist")
+        with handle_db_error(self.db):
+            event = self.repo.get_event_by_id(event_id)
+            if event is None:
+                raise EventNotFound("no event exist")
 
         # check if current user is the owner of the 
         if event.organizer_id != current_user.id:
@@ -66,7 +67,21 @@ class EventService:
 
         # insert the seats in db
         with handle_db_error(self.db):
-            event_repo.creat_seats_for_event(event_id, seat_list)
+            self.repo.creat_seats_for_event(event_id, seat_list)
             self.db.commit()
 
         return True
+
+    def get_all_events(self) -> list[Event] | None:
+        result = self.repo.get_all_events()
+
+        return result
+
+    def get_all_event_seats(self, event_id: str) -> list[Seat] | None:
+        id: UUID = UUID(event_id)
+
+        with handle_db_error(db=self.db):
+            result = self.repo.get_event_seats(id)
+            return result
+
+        return None
