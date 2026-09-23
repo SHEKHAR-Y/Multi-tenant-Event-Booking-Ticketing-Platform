@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}events.booking{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="window">
+        <div class="titlebar">
+            <div class="traffic-lights">
+                <span class="dot dot-red"></span>
+                <span class="dot dot-yellow"></span>
+                <span class="dot dot-green"></span>
+            </div>
+            <div class="titlebar-path">event-booking-platform — {% block filename %}home.html{% endblock %}</div>
+            <div class="titlebar-spacer"></div>
+        </div>
+
+        <div class="tabstrip">
+            <a href="/" class="tab {% block tab_home %}{% endblock %}">home.html</a>
+            <a href="/events" class="tab {% block tab_events %}{% endblock %}">events.html</a>
+            <div class="tabstrip-spacer"></div>
+            {% if user %}
+                <span class="tab tab-user">{{ user.email }}</span>
+                <a href="/logout" class="tab tab-action">logout()</a>
+            {% else %}
+                <a href="/register" class="tab">register()</a>
+                <a href="/login" class="tab tab-action">login()</a>
+            {% endif %}
+        </div>
+
+        <div class="editor">
+            <div class="gutter">
+                {% for i in range(1, 31) %}<span>{{ i }}</span>{% endfor %}
+            </div>
+            <div class="canvas">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+
+        <div class="statusbar">
+            <span>main</span>
+            <span class="statusbar-spacer"></span>
+            <span>UTF-8</span>
+            <span>FastAPI + Jinja2</span>
+        </div>
+    </div>
+</body>
+</html>

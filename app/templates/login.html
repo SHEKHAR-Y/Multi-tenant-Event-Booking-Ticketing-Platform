@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+
+{% block filename %}login.html{% endblock %}
+{% block tab_home %}{% endblock %}
+
+{% block content %}
+<pre class="code-block"><span class="c">// auth.login()</span>
+<span class="c">// enter your credentials to continue</span>
+</pre>
+
+<div id="error-box" class="error-line" style="display:none;"></div>
+
+<form id="login-form" class="form-block">
+    <div class="field">
+        <label for="username">email</label>
+        <input type="email" id="username" name="username" placeholder="you@example.com" required autofocus>
+    </div>
+    <div class="field">
+        <label for="password">password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required>
+    </div>
+    <button type="submit" class="btn btn-primary">login()</button>
+    <a href="/register" class="btn btn-ghost">register()</a>
+</form>
+
+<script>
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const form = e.target;
+    const errorBox = document.getElementById('error-box');
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    const body = new URLSearchParams();
+    body.append('username', form.username.value);
+    body.append('password', form.password.value);
+
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'logging in...';
+
+    try {
+        const res = await fetch('/api/v1/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: body,
+            credentials: 'same-origin',   // lets the browser store the Set-Cookie response
+        });
+
+        if (res.ok) {
+            window.location.href = '/';
+            return;
+        }
+
+        const data = await res.json();
+        let message = 'invalid email or password';
+        if (data.error && Array.isArray(data.error) && data.error.length > 0) {
+            message = data.error[0].msg || message;
+        } else if (data.detail) {
+            message = typeof data.detail === 'string' ? data.detail : message;
+        }
+        errorBox.textContent = '// error: ' + message;
+        errorBox.style.display = 'block';
+    } catch (err) {
+        errorBox.textContent = '// error: network error, please try again';
+        errorBox.style.display = 'block';
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'login()';
+    }
+});
+</script>
+{% endblock %}

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request
 from fastapi.exceptions import RequestValidationError 
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
@@ -14,6 +14,13 @@ from app.router.event.create_event import router as create_event_router
 from app.router.event.get_event import router as get_event_router
 from app.router.event.create_event_seat import router as create_event_seat_router
 from app.router.event.get_event_seats import router as get_event_seats
+
+# frontend router
+from app.router.pages.frontend import router as frontend_router
+
+# jinja 2 template 
+from fastapi.staticfiles import StaticFiles
+from app.core.templates import templates
 
 # exception handling 
 from app.core.exceptions import (UserAlreadyExists, UserNotFound,InvalidTokenError,TokenExpiredError,NotFoundError, UserNotAuthorized, DatabaseUnavailableError, CustomIntegrityError, InvalidCredentialError, EventNotFound)
@@ -34,6 +41,8 @@ from app.dependencies.rate_limit import rate_limit
 app = FastAPI(
     title=settings.app_name
 )
+
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
@@ -59,6 +68,8 @@ app.include_router(get_event_router, prefix="/api", tags=["Event"])
 app.include_router(create_event_seat_router, prefix="/api", tags=["Event"])
 app.include_router(get_event_seats, prefix="/api", tags=["Event"])
 
-@app.get("/", dependencies=[Depends(rate_limit(requests=5, window_seconds=60))])
+app.include_router(frontend_router)
+
+@app.get("/health", dependencies=[Depends(rate_limit(requests=5, window_seconds=60))])
 def health_check():
     return {"message": "API is healthy and running!"}
