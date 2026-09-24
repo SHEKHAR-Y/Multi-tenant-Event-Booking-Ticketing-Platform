@@ -7,6 +7,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # use the dummy env variable for now
+    env:
+      DEBUG: "false"
+      DATABASE_URL: "postgresql+psycopg2://postgres:ShekhaRpc@29@db:5432/my-db"
+      REDIS_URL: "redis://localhost:6379"
+      SECRET_KEY: "mynameisshekhar@123"
+      access_token_expire_minutes: "15"
+      refresh_token_expire_days: "3"
+
 
     steps:
       - name: Checkout repository
