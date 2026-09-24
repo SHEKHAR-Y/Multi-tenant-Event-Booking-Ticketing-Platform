@@ -15,6 +15,7 @@ jobs:
       SECRET_KEY: "mynameisshekhar@123"
       access_token_expire_minutes: "15"
       refresh_token_expire_days: "3"
+      algo: "HS256"
 
 
     steps:
