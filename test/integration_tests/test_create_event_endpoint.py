@@ -14,7 +14,7 @@ def test_create_event_unauthenticated(test_client):
     response = test_client.post(
         "/api/v1/event/create"
         )
-    assert response.status_code == 401
+    assert response.status_code == 403
 
 def test_create_event_unauthorized(test_client):
     # register a user normally default role = customer 

@@ -5,13 +5,13 @@
 
 {% block content %}
 <pre class="code-block"><span class="c">// event-booking-platform</span>
-<span class="c">// a place to find events and lock down your seat</span>
+<span class="c">// a place to find events and book your seat</span>
 <span class="c">// before someone else does.</span>
 
 <span class="kw">const</span> <span class="var">platform</span> = {
   <span class="prop">events</span>: <span class="str">"browse & book"</span>,
   <span class="prop">seats</span>: <span class="str">"reserved in real time"</span>,
-  <span class="prop">access</span>: <span class="str">"login required"</span>,
+  <span class="prop">access</span>: <span class="str">"login is pending"</span>,
 };
 
 <span class="c">// $ get started</span>
@@ -20,7 +20,7 @@
 <span class="actions">
   {% if user %}
     <span class="tab tab-user">{{ user.email }}</span>
-    <a href="/logout" class="tab tab-action">logout()</a>
+    <a href="/api/v1/logout" class="tab tab-action">logout()</a>
   {% else %}
     <a href="/login" class="btn btn-primary">login()</a>
     <a href="/events" class="btn btn-ghost">browse_events()</a>

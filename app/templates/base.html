@@ -24,11 +24,33 @@
             <div class="tabstrip-spacer"></div>
             {% if user %}
                 <span class="tab tab-user">{{ user.email }}</span>
-                <a href="/logout" class="tab tab-action">logout()</a>
+                <a href="/api/v1/logout" id="logout-btn" class="tab tab-action">logout()</a>
             {% else %}
                 <a href="/register" class="tab">register()</a>
                 <a href="/login" class="tab tab-action">login()</a>
             {% endif %}
+            <script>
+                const logoutButton = document.getElementById("logout-btn");
+
+                if (logoutButton) {
+                    logoutButton.addEventListener("click", async (event) => {
+                    event.preventDefault();
+
+                    try {
+                        const res = await fetch("/api/v1/logout", {
+                            method: "GET",
+                            credentials: "same-origin"
+                        });
+                    
+                        if (res.status === 200) {
+                            window.location.href = "/";
+                        }
+                    } catch (err) {
+                        console.error("Logout failed:", err);
+                    }
+                    });
+                }
+            </script>
         </div>
 
         <div class="editor">

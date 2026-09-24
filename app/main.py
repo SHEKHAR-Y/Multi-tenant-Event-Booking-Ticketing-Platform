@@ -9,6 +9,7 @@ from app.router.auth.register import router as register
 from app.router.auth.login import router as login
 from app.router.auth.refresh_token import router as refresh_token_router
 from app.router.auth.change_role import router as change_role_router
+from app.router.auth.logout import router as logout_router
 
 from app.router.event.create_event import router as create_event_router
 from app.router.event.get_event import router as get_event_router
@@ -62,6 +63,8 @@ app.include_router(register, prefix="/api", tags=["Authentication"])
 app.include_router(login, prefix="/api", tags=["Authentication"])
 app.include_router(refresh_token_router, prefix="/api", tags=["Authentication"])
 app.include_router(change_role_router, prefix="/api", tags=["Authentication"])
+app.include_router(logout_router, prefix="/api", tags=["Authentication"])
+
 
 app.include_router(create_event_router, prefix="/api", tags=["Event"])
 app.include_router(get_event_router, prefix="/api", tags=["Event"])
@@ -73,3 +76,4 @@ app.include_router(frontend_router)
 @app.get("/health", dependencies=[Depends(rate_limit(requests=5, window_seconds=60))])
 def health_check():
     return {"message": "API is healthy and running!"}
+# LIVE TEST Thu 24 Sep 2026 04:51:59 PM IST
