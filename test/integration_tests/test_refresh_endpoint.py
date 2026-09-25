@@ -2,17 +2,20 @@ import pytest
 
 from app.models.user import User
 
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_refresh_token_no_token_provided(test_client):
     # call refresh endpoint without providing refresh token
     refresh_request_response = test_client.post("/api/v1/refresh_access_token")
     assert refresh_request_response.status_code == 422
 
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_refresh_token_empty_string(test_client):
     refresh_request_payload = {"refresh_token": ""}
 
     refresh_request_response = test_client.post("/api/v1/refresh_access_token", json=refresh_request_payload)
     assert refresh_request_response.status_code == 401
 
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_refresh_token_for_user_not_exist(test_client, db_session):
     # register user
     payload = {
@@ -47,6 +50,7 @@ def test_refresh_token_for_user_not_exist(test_client, db_session):
     
     assert refresh_endpoint_response.status_code == 404
 
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_refresh_token_success(test_client):
     # register user
     payload = {

@@ -7,15 +7,15 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    # use the dummy env variable for now
+    # use the secrets from github actions secret and variables
     env:
-      DEBUG: "false"
-      DATABASE_URL: "postgresql+psycopg2://postgres:ShekhaRpc@29@db:5432/my-db"
-      REDIS_URL: "redis://localhost:6379"
-      SECRET_KEY: "mynameisshekhar@123"
-      access_token_expire_minutes: "15"
-      refresh_token_expire_days: "3"
-      algo: "HS256"
+      DEBUG: ${{secrets.DEBUG}}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      REDIS_URL: ${{secrets.REDIS_URL}}
+      SECRET_KEY: ${{secrets.SECRET_KEY}}
+      access_token_expire_minutes: ${{secrets.ACCESS_TOKEN_EXPIRE_MINUTES}}
+      refresh_token_expire_days: ${{secrets.REFRESH_TOKEN_EXPIRE_DAYS}}
+      algo: ${{secrets.ALGO}}
 
 
     steps:

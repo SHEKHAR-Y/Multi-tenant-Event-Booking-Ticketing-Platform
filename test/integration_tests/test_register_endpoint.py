@@ -1,5 +1,6 @@
 import pytest
 
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_register_invalid_email(test_client):
     payload = {
             "email": "test.com", # pydantic verify email by checking '@' in it 
@@ -10,7 +11,7 @@ def test_register_invalid_email(test_client):
     response = test_client.post("/api/v1/register", json=payload)
     assert response.status_code == 422
 
-
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_register_invalid_password(test_client):
     payload = {
             "email": "test@test.com",
@@ -21,6 +22,7 @@ def test_register_invalid_password(test_client):
     response = test_client.post("/api/v1/register", json=payload)
     assert response.status_code == 422
 
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_register_username_too_short(test_client):
     payload = {
             "email": "test@test.com",
@@ -31,6 +33,7 @@ def test_register_username_too_short(test_client):
     response = test_client.post("/api/v1/register", json=payload)
     assert response.status_code == 422
 
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_register_username_too_long(test_client):
     payload = {
             "email": "test@test.com",
@@ -41,7 +44,7 @@ def test_register_username_too_long(test_client):
     response = test_client.post("/api/v1/register", json=payload)
     assert response.status_code == 422
 
-
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_register_success(test_client):
     payload = {
         "email": "test@test.com",
@@ -55,7 +58,7 @@ def test_register_success(test_client):
     assert data["email"] == "test@test.com"
     assert data["username"] == "test_username"
 
-
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_register_duplicate_email(test_client):
     payload = {
             "email": "test@test.com",

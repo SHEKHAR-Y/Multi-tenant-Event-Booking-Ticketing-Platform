@@ -1,5 +1,6 @@
 import pytest 
 
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_login_success(test_client):
     # create a user for testing
     payload = {
@@ -24,6 +25,7 @@ def test_login_success(test_client):
         )
     assert response2.status_code == 200
 
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_login_failure_invalid_email(test_client):
     """
     for the wrong email format or the email not registered it will give same error to not explitly
@@ -38,7 +40,7 @@ def test_login_failure_invalid_email(test_client):
         )
     assert response.status_code == 404
 
-
+@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_login_failure_incorrect_password(test_client):
     # create a user for testing
     payload = {
