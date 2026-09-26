@@ -1,26 +1,18 @@
-from fastapi import Request, HTTPException, status
-
-from pwdlib import PasswordHash
-
+import uuid
 from datetime import datetime, timedelta, timezone
 
-import uuid
-
-from jose import jwt, JWTError, ExpiredSignatureError
-
-from app.core.exceptions import InvalidTokenError, TokenExpiredError
+# app/core/security.py
+from fastapi import Request
+from fastapi.security import OAuth2PasswordBearer
+from jose import ExpiredSignatureError, JWTError, jwt
+from pwdlib import PasswordHash
 
 from app.core.config import get_settings
+from app.core.exceptions import InvalidTokenError, TokenExpiredError, UserNotAuthorized
 
-from fastapi.security import OAuth2PasswordBearer
-
-from app.core.exceptions import UserNotAuthorized
-
-# app/core/security.py
-from typing import Optional
 
 class OAuth2PasswordBearerWithCookie(OAuth2PasswordBearer):
-    async def __call__(self, request: Request) -> Optional[str]:
+    async def __call__(self, request: Request) -> str | None:
         header_token = await super().__call__(request)  # won't raise, since auto_error=False below
         if header_token:
             return header_token

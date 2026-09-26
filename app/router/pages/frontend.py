@@ -1,9 +1,8 @@
-from fastapi import APIRouter, Response, Request, Depends
+from fastapi import APIRouter, Depends, Request
 
-from app.core.templates import templates 
-
-from app.dependencies.auth_cookie import get_optional_current_user
+from app.core.templates import templates
 from app.dependencies.auth import get_current_user
+from app.dependencies.auth_cookie import get_optional_current_user
 
 router = APIRouter()
 

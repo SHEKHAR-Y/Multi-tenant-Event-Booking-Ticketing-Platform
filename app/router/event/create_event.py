@@ -1,16 +1,11 @@
 from fastapi import APIRouter, Depends, Request, status
-
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-
-from app.services.event import EventService
-
 from app.dependencies.auth import get_current_user
-
-from app.schemas.event import EventCreateRequest, EventCreateResponse
 from app.models.user import User
-
+from app.schemas.event import EventCreateRequest, EventCreateResponse
+from app.services.event import EventService
 
 router = APIRouter()
 

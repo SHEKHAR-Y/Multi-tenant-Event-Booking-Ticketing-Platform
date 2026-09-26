@@ -1,6 +1,7 @@
 from fastapi import Request, status
-from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
 
 def validation_exception_handler(request: Request, exception: RequestValidationError):
     # give the validation error response instead of crash

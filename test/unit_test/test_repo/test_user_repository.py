@@ -1,9 +1,8 @@
-import pytest
 import uuid
 
 from app.models.user import User
-
 from app.repository.user import UserRepository
+
 
 # two cases - 1. user exist 2. no user exist
 def test_get_user_by_email_returns_user_when_exists(db_session):

@@ -1,12 +1,10 @@
-from fastapi import Request, Depends
-
+from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-
+from app.dependencies.auth import get_current_user
 from app.models.user import User
 
-from app.dependencies.auth import get_current_user
 
 async def get_optional_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     token = request.cookies.get("access_token")

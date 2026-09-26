@@ -1,4 +1,3 @@
-import pytest 
 
 def test_login_success(test_client):
     # create a user for testing

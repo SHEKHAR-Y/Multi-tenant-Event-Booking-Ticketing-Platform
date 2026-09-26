@@ -45,6 +45,9 @@ jobs:
       - name: Run tests
         run: pytest 
 
+      - name: Run lint
+        run: ruff check .
+
       - name: destroy the redis container
         if: always()
         run: docker compose down 

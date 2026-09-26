@@ -1,4 +1,3 @@
-import pytest
 
 def test_register_invalid_email(test_client):
     payload = {

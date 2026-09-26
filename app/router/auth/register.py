@@ -1,15 +1,13 @@
-from fastapi import APIRouter, Request, status, Depends
+import logging
+
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-
 from app.dependencies.rate_limit import rate_limit
-
-from app.schemas.user import UserRegisterRequest, UserRegisterResponse 
-
+from app.schemas.user import UserRegisterRequest, UserRegisterResponse
 from app.services.auth.user import UserService
 
-import logging
 logger = logging.getLogger(__name__)
 
 router = APIRouter()

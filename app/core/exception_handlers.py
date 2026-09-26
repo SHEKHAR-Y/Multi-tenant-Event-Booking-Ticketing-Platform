@@ -1,6 +1,17 @@
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
-from app.core.exceptions import InvalidTokenError, TokenExpiredError, UserAlreadyExists, UserNotFound, UserNotAuthorized, DatabaseUnavailableError, CustomIntegrityError, InvalidCredentialError, EventNotFound
+
+from app.core.exceptions import (
+    CustomIntegrityError,
+    DatabaseUnavailableError,
+    EventNotFound,
+    InvalidCredentialError,
+    InvalidTokenError,
+    TokenExpiredError,
+    UserAlreadyExists,
+    UserNotAuthorized,
+    UserNotFound,
+)
 
 
 async def user_already_exist(request: Request, exc: UserAlreadyExists):

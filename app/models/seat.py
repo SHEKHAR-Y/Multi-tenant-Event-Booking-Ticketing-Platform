@@ -1,11 +1,12 @@
-import enum 
+import enum
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import String, Integer, ForeignKey, Enum, Numeric
+from sqlalchemy import Enum, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
+
 
 class SeatStatus(str, enum.Enum):
     AVAILABLE = "available"

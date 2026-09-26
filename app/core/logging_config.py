@@ -3,6 +3,7 @@ import sys
 
 from pythonjsonlogger import jsonlogger
 
+
 def configure_logging(debug: bool):
     handler = logging.StreamHandler(sys.stdout)
 

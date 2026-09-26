@@ -1,11 +1,10 @@
-import pytest
-
 import uuid
-
 from datetime import timedelta
 
-from app.core.security import create_access_token, decode_access_token
+import pytest
+
 from app.core.exceptions import InvalidTokenError, TokenExpiredError
+from app.core.security import create_access_token, decode_access_token
 
 
 def test_access_token_tampered_token():
