@@ -1,6 +1,4 @@
-import pytest
 
-from app.dependencies.auth import get_current_user
 
 def test_get_current_user_dependency():
     # This test will check if the get_current_user dependency correctly retrieves a user from a valid token.

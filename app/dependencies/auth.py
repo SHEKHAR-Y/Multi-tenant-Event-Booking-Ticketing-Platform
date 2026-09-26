@@ -1,16 +1,13 @@
-from fastapi import Depends 
-
 import uuid
 
+from fastapi import Depends
 from sqlalchemy.orm import Session
 
-from app.core.security import oauth2_scheme
 from app.core.database import get_db
-from app.core.security import decode_access_token
 from app.core.exceptions import UserNotFound
-from app.repository.user import UserRepository
-
+from app.core.security import decode_access_token, oauth2_scheme
 from app.models.user import User
+from app.repository.user import UserRepository
 
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:

@@ -1,13 +1,12 @@
-from sqlalchemy import Integer, String, DateTime, func, ForeignKey, Enum
-from sqlalchemy.orm import mapped_column, Mapped, relationship
-
+import enum
+from datetime import datetime
 from uuid import UUID, uuid4
+
+from sqlalchemy import DateTime, Enum, ForeignKey, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
 
-from datetime import datetime
-
-import enum
 
 class EventStatus(str, enum.Enum):
     DRAFT = "draft"

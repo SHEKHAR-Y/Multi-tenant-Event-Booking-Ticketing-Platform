@@ -1,14 +1,10 @@
-from fastapi import Depends, status, Request, APIRouter
-
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
-from app.schemas.seat import BulkSeatCreationRequest, SeatCreationResponse
-
-from app.dependencies.auth import get_current_user
-
 from app.core.database import get_db
-
-from app.services.event import EventService 
+from app.dependencies.auth import get_current_user
+from app.schemas.seat import BulkSeatCreationRequest
+from app.services.event import EventService
 
 router = APIRouter()
 

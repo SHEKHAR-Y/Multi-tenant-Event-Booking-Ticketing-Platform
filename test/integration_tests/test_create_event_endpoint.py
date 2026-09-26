@@ -1,8 +1,8 @@
-import pytest
+
+from datetime import datetime
 
 from app.models.user import User, UserRole
 
-from datetime import datetime
 
 def normalize(dt_string):
     # SQLite strips timezone info on round-trip; Postgres (prod) preserves it.

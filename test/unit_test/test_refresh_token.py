@@ -1,10 +1,15 @@
-import pytest
 import uuid
-
-from app.core.security import create_refresh_token, decode_refresh_token, create_access_token
-from app.core.exceptions import InvalidTokenError, TokenExpiredError
-
 from datetime import timedelta
+
+import pytest
+
+from app.core.exceptions import InvalidTokenError, TokenExpiredError
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_refresh_token,
+)
+
 
 def test_create_refresh_token():
     mock_user_id = uuid.uuid4() # used as the subject encoded in the token 

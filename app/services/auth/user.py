@@ -1,18 +1,30 @@
-from sqlalchemy.orm import Session
-
 import uuid
 
-from app.core.exceptions import UserAlreadyExists, UserNotFound, InvalidCredentialError, UserNotAuthorized
-from app.core.security import hash_password
-from app.core.security import verify_password, create_access_token, create_refresh_token, decode_refresh_token
+from sqlalchemy.orm import Session
+
 from app.core.db_error_handler import handle_db_error
-
-from app.schemas.user import UserRegisterRequest, UserRegisterResponse, UserLoginResponse
-
+from app.core.exceptions import (
+    InvalidCredentialError,
+    UserAlreadyExists,
+    UserNotAuthorized,
+    UserNotFound,
+)
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_refresh_token,
+    hash_password,
+    verify_password,
+)
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
-
 from app.repository.user import UserRepository
+from app.schemas.user import (
+    UserLoginResponse,
+    UserRegisterRequest,
+    UserRegisterResponse,
+)
+
 
 class UserService:
     def __init__(self, db: Session):
@@ -30,9 +42,6 @@ class UserService:
     def store_refresh_token_service(self, token_id: uuid.UUID, token_expiry, user_id: uuid.UUID, family_id: uuid.UUID | None = None) -> bool:
         if family_id is None: 
             family_id = uuid.uuid4()
-
-        # user id 
-        user_id = user_id
 
         # create the object 
         refresh_token_object = RefreshToken(

@@ -1,15 +1,12 @@
-import pytest
-
-from uuid import UUID, uuid4
-
-from app.repository.event import EventRepository
-
-from app.models.user import User, UserRole
-from app.models.event import Event
-
-from app.schemas.seat import SeatDetails
 
 from datetime import datetime
+from uuid import uuid4
+
+from app.models.event import Event
+from app.models.user import User, UserRole
+from app.repository.event import EventRepository
+from app.schemas.seat import SeatDetails
+
 
 def test_create_event(db_session):
     # register a new user
@@ -46,7 +43,6 @@ def test_get_event_by_id_fail(db_session):
     assert eventrepo.get_event_by_id(mock_event_id) == None
 
 def test_get_event_by_id_success(db_session):
-    ...
     # register a new user
     test_user = User(
             email = "test@test.com",

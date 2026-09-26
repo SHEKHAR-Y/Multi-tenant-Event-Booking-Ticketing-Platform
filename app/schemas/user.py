@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 
+
 class UserRegisterRequest(BaseModel):
     email: EmailStr = Field(description="user's email address")
     username: str = Field(min_length=3, max_length=20)

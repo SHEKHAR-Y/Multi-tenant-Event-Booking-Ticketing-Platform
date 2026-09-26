@@ -1,12 +1,12 @@
-from sqlalchemy.orm import Session
+from uuid import UUID
+
 from sqlalchemy import insert, select
+from sqlalchemy.orm import Session
 
 from app.models.event import Event
 from app.models.seat import Seat
-
-from uuid import UUID
-
 from app.schemas.seat import SeatDetails
+
 
 class EventRepository:
     def __init__(self, db: Session):

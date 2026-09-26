@@ -1,20 +1,16 @@
+from uuid import UUID
+
 from sqlalchemy.orm import Session
 
-from uuid import UUID, uuid4 
-
-from app.core.security import decode_access_token
-from app.core.exceptions import UserNotFound, UserNotAuthorized, EventNotFound
 from app.core.db_error_handler import handle_db_error
-
-from app.schemas.event import EventCreateRequest, EventResponse
-from app.schemas.seat import BulkSeatCreationRequest
-
-from app.repository.user import UserRepository
-from app.repository.event import EventRepository
-
-from app.models.user import UserRole, User
+from app.core.exceptions import EventNotFound, UserNotAuthorized
 from app.models.event import Event
 from app.models.seat import Seat
+from app.models.user import User, UserRole
+from app.repository.event import EventRepository
+from app.schemas.event import EventCreateRequest
+from app.schemas.seat import BulkSeatCreationRequest
+
 
 class EventService:
     def __init__(self, db: Session):

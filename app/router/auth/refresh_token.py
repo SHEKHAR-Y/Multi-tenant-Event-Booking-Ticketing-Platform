@@ -1,15 +1,10 @@
-from fastapi import APIRouter, Depends, Request, status 
-
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
-from app.schemas.user import UserRefreshTokenRequest, UserRefreshTokenResponse
-
-from app.services.auth.user import UserService
-
 from app.core.database import get_db
-
 from app.dependencies.rate_limit import rate_limit
-
+from app.schemas.user import UserRefreshTokenRequest, UserRefreshTokenResponse
+from app.services.auth.user import UserService
 
 router = APIRouter()
 

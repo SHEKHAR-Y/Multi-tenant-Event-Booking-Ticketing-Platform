@@ -1,14 +1,9 @@
 # get all the events
-from fastapi import APIRouter, Depends, status, Request
+from fastapi import APIRouter, Depends, Request, status
 from sqlalchemy.orm import Session
 
-from app.schemas.event import EventResponse
-
 from app.core.database import get_db
-
 from app.services.event import EventService
-
-from app.models.event import Event
 
 router = APIRouter()
 

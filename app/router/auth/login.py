@@ -1,15 +1,11 @@
-from fastapi import APIRouter, Request, status, Depends, Response
+from fastapi import APIRouter, Depends, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
-
 from sqlalchemy.orm import Session
 
-from app.schemas.user import UserLoginResponse
-
 from app.core.database import get_db
-
-from app.services.auth.user import UserService
-
 from app.dependencies.rate_limit import rate_limit
+from app.schemas.user import UserLoginResponse
+from app.services.auth.user import UserService
 
 router = APIRouter()
 

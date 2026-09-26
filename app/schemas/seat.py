@@ -1,8 +1,8 @@
-from pydantic import BaseModel, Field
-
+from decimal import Decimal
 from uuid import UUID
 
-from decimal import Decimal
+from pydantic import BaseModel, Field
+
 
 class SeatDetails(BaseModel):
     row: str = Field(min_length=1, max_length=4)

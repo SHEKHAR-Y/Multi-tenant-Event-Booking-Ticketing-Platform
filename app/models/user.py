@@ -1,11 +1,11 @@
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import DateTime, String, Boolean, Enum, func 
-from uuid import UUID, uuid4
-from app.core.database import Base
-
-from datetime import datetime
-
 import enum
+from datetime import datetime
+from uuid import UUID, uuid4
+
+from sqlalchemy import Boolean, DateTime, Enum, String, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.core.database import Base
 
 
 class UserRole(str, enum.Enum):

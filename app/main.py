@@ -1,34 +1,51 @@
-from fastapi import FastAPI, Depends, Request
-from fastapi.exceptions import RequestValidationError 
-from starlette.exceptions import HTTPException as StarletteHTTPException
-
-from app.router.http_exception_handler import http_exception_handler
-from app.router.validation_error_handling import validation_exception_handler
-
-from app.router.auth.register import router as register
-from app.router.auth.login import router as login
-from app.router.auth.refresh_token import router as refresh_token_router
-from app.router.auth.change_role import router as change_role_router
-from app.router.auth.logout import router as logout_router
-
-from app.router.event.create_event import router as create_event_router
-from app.router.event.get_event import router as get_event_router
-from app.router.event.create_event_seat import router as create_event_seat_router
-from app.router.event.get_event_seats import router as get_event_seats
-
-# frontend router
-from app.router.pages.frontend import router as frontend_router
+from fastapi import Depends, FastAPI
+from fastapi.exceptions import RequestValidationError
 
 # jinja 2 template 
 from fastapi.staticfiles import StaticFiles
-from app.core.templates import templates
-
-# exception handling 
-from app.core.exceptions import (UserAlreadyExists, UserNotFound,InvalidTokenError,TokenExpiredError,NotFoundError, UserNotAuthorized, DatabaseUnavailableError, CustomIntegrityError, InvalidCredentialError, EventNotFound)
-from app.core.exception_handlers import (user_already_exist, user_not_found, invalid_token_handler, token_expired_handler, user_not_authorized, database_unavailable, integrity_error, invalid_credential_error, event_not_found_handler)
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 # setting
 from app.core.config import get_settings
+from app.core.exception_handlers import (
+    database_unavailable,
+    event_not_found_handler,
+    integrity_error,
+    invalid_credential_error,
+    invalid_token_handler,
+    token_expired_handler,
+    user_already_exist,
+    user_not_authorized,
+    user_not_found,
+)
+
+# exception handling 
+from app.core.exceptions import (
+    CustomIntegrityError,
+    DatabaseUnavailableError,
+    EventNotFound,
+    InvalidCredentialError,
+    InvalidTokenError,
+    TokenExpiredError,
+    UserAlreadyExists,
+    UserNotAuthorized,
+    UserNotFound,
+)
+from app.router.auth.change_role import router as change_role_router
+from app.router.auth.login import router as login
+from app.router.auth.logout import router as logout_router
+from app.router.auth.refresh_token import router as refresh_token_router
+from app.router.auth.register import router as register
+from app.router.event.create_event import router as create_event_router
+from app.router.event.create_event_seat import router as create_event_seat_router
+from app.router.event.get_event import router as get_event_router
+from app.router.event.get_event_seats import router as get_event_seats
+from app.router.http_exception_handler import http_exception_handler
+
+# frontend router
+from app.router.pages.frontend import router as frontend_router
+from app.router.validation_error_handling import validation_exception_handler
+
 settings = get_settings()
 
 # logger 

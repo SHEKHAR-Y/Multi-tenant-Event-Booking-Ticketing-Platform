@@ -1,12 +1,11 @@
+import uuid
+
 from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
-import uuid
-
-from app.models.user import User, UserRole
 from app.models.refresh_token import RefreshToken
+from app.models.user import User, UserRole
 
-from app.core.db_error_handler import handle_db_error 
 
 class UserRepository:
     def __init__(self, db: Session):

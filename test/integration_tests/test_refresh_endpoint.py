@@ -1,6 +1,6 @@
-import pytest 
 
 from app.models.user import User
+
 
 def test_refresh_token_no_token_provided(test_client):
     # call refresh endpoint without providing refresh token

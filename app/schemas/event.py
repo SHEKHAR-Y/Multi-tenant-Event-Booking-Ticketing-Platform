@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
 from uuid import UUID
+
+from pydantic import BaseModel, Field, model_validator
+
 
 class EventCreateRequest(BaseModel):
     title: str = Field(min_length=3, max_length=100, description="Title of the event")

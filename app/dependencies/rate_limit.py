@@ -1,6 +1,8 @@
 from fastapi import Request, status
-from fastapi.exceptions import HTTPException 
+from fastapi.exceptions import HTTPException
+
 from app.core.redis_client import redis_client
+
 
 def rate_limit(requests: int, window_seconds: int):
     def limiter(request: Request):
