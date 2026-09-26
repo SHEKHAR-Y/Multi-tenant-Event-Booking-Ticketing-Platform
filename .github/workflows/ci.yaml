@@ -31,6 +31,20 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+        
+      - name: start redis for rate limiting (for test)
+        run: docker compose up -d redis
+
+      - name: Wait for Redis
+        run: |
+          until [ "$(docker inspect -f '{{.State.Health.Status}}' event-booking-redis)" = "healthy" ]; do
+            echo "Waiting for Redis..."
+            sleep 2
+          done
 
       - name: Run tests
-        run: pytest
+        run: pytest 
+
+      - name: destroy the redis container
+        if: always()
+        run: docker compose down 

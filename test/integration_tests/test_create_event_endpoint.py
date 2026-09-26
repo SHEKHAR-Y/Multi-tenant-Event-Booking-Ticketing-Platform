@@ -10,14 +10,12 @@ def normalize(dt_string):
     dt = datetime.fromisoformat(dt_string.replace("Z", "+00:00"))
     return dt.replace(tzinfo=None)
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_unauthenticated(test_client):
     response = test_client.post(
         "/api/v1/event/create"
         )
     assert response.status_code == 403
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_unauthorized(test_client):
     # register a user normally default role = customer 
     payload = {
@@ -56,7 +54,6 @@ def test_create_event_unauthorized(test_client):
         )
     assert response.status_code == 403 # becuase a user with customer role can't create event only user with role = organizer can create an event        
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_authorized_success(test_client, db_session):
     # register normal user 
     test_client.post("/api/v1/register", json={
@@ -108,7 +105,6 @@ def test_create_event_authorized_success(test_client, db_session):
     assert normalize(data["start_time"]) == normalize(payload["start_time"])
     assert normalize(data["end_time"]) == normalize(payload["end_time"])
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_end_time_before_start_time(test_client, db_session):
     # register normal user 
     test_client.post("/api/v1/register", json={
@@ -153,8 +149,6 @@ def test_create_event_end_time_before_start_time(test_client, db_session):
 
     assert create_event_response.status_code == 422
 
-
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_title_too_short(test_client):
     # register a user normally 
     payload = {
@@ -193,7 +187,6 @@ def test_create_event_title_too_short(test_client):
         )
     assert response.status_code == 422
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_title_too_long(test_client):
     # register a user normally 
     payload = {
@@ -231,8 +224,6 @@ def test_create_event_title_too_long(test_client):
         )
     assert response.status_code == 422
 
-
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_description_too_short(test_client):
     # register a user normally 
     payload = {
@@ -271,7 +262,6 @@ def test_create_event_description_too_short(test_client):
         )
     assert response.status_code == 422
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_description_too_long(test_client):
     # register a user normally 
     payload = {
@@ -309,7 +299,6 @@ def test_create_event_description_too_long(test_client):
         )
     assert response.status_code == 422
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_venue_name_too_short(test_client):
     # register a user normally 
     payload = {
@@ -348,7 +337,6 @@ def test_create_event_venue_name_too_short(test_client):
         )
     assert response.status_code == 422
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_venue_name_too_long(test_client):
     # register a user normally 
     payload = {
@@ -386,7 +374,6 @@ def test_create_event_venue_name_too_long(test_client):
         )
     assert response.status_code == 422
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_venue_address_too_short(test_client):
     # register a user normally 
     payload = {
@@ -425,7 +412,6 @@ def test_create_event_venue_address_too_short(test_client):
         )
     assert response.status_code == 422
 
-@pytest.mark.skip(reason="redis: currently no deployed redis server")
 def test_create_event_venue_address_too_long(test_client):
     # register a user normally 
     payload = {
@@ -462,4 +448,3 @@ def test_create_event_venue_address_too_long(test_client):
             }
         )
     assert response.status_code == 422
-
