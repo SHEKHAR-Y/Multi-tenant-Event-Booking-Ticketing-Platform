@@ -1,19 +1,24 @@
 # Multi-Tenant Event Booking & Ticketing Platform
 
-A production-style backend for an event booking and ticketing system (think BookMyShow), built as a deep dive into backend architecture, authentication security, and database design — not just "make the CRUD work," but "make it the way a real system would need to work."
+A production-style backend for an event booking and ticketing system (think BookMyShow), built as a deep dive into backend architecture, authentication security, database design, testing, containerization, and CI/CD — not just "make the CRUD work," but "make it the way a real system would need to work."
 
-This is a work-in-progress portfolio project. The goal isn't to ship every feature fast; it's to get the foundational layers — auth, error handling, data access — structurally right before building the rest on top of them.
+This is a work-in-progress portfolio project. The goal isn't to ship every feature fast; it is to build the foundational layers — authentication, authorization, error handling, data access, testing, containerization, and CI — correctly before building the remaining features on top of them.
 
 ---
 
 ## Why this project
 
-Most tutorial-style CRUD APIs stop at "it works." This project is an exercise in the parts that usually get skipped:
+Most tutorial-style CRUD APIs stop at "it works." This project focuses on the engineering concerns that are usually skipped:
 
 - **Secure, rotating refresh tokens** with reuse detection — not just a long-lived JWT.
 - **Strict layered architecture** (router → service → repository) so business logic never leaks into HTTP handlers or SQL leaks into services.
 - **Centralized, typed exception handling** instead of scattered `try/except` blocks and silent failures.
-- **Migration-first schema management** with Alembic, so the database's history is reviewable, not reconstructed from a live DB.
+- **Migration-first schema management** with Alembic, so the database's history is reviewable rather than reconstructed from a live database.
+- **Automated testing** with unit and integration tests using Pytest and FastAPI `TestClient`.
+- **Redis-backed rate limiting** to protect authentication endpoints from excessive requests.
+- **Dockerized local development** using Docker Compose for PostgreSQL and Redis.
+- **Automated code quality checks** using Ruff.
+- **CI pipeline with GitHub Actions** to automatically lint and test changes before they are merged into the protected `main` branch.
 
 ---
 
@@ -23,181 +28,530 @@ Most tutorial-style CRUD APIs stop at "it works." This project is an exercise in
 |---|---|
 | Language | Python 3.12 |
 | Framework | FastAPI |
-| ORM | SQLAlchemy 2.0 (typed, `Mapped[...]` style) |
+| ORM | SQLAlchemy 2.0 |
 | Database | PostgreSQL |
 | Migrations | Alembic |
 | Validation | Pydantic v2 |
-| Auth | JWT (access + rotating refresh tokens), `python-jose` |
-| Password hashing | `pwdlib` (Argon2) |
+| Authentication | JWT (access + rotating refresh tokens) |
+| JWT Library | `python-jose` |
+| Password Hashing | `pwdlib` / Argon2 |
+| Cache / Rate Limiting | Redis |
 | Testing | Pytest + FastAPI `TestClient` |
-| Planned | Docker, Redis, Celery |
+| Linting | Ruff |
+| Containerization | Docker |
+| Local Orchestration | Docker Compose |
+| CI | GitHub Actions |
+| Planned | Celery, payment integration |
 
 ---
 
 ## Architecture
 
-The codebase follows a strict layered pattern. Each layer has exactly one job:
+The codebase follows a strict layered pattern. Each layer has exactly one responsibility.
 
-```
-Router          → HTTP concerns only: parses requests, extracts tokens, returns responses.
-                  No business logic, no DB access.
-
-Service         → Owns business logic, auth/token verification, orchestration
-                  across repositories.
-
-Repository      → Owns DB access only. No business rules, no validation.
-
-Exceptions      → Domain-specific exceptions raised anywhere in service/repository
-                  layers, mapped to HTTP responses in ONE place (main.py).
+```text
+Router
+  ↓
+Service
+  ↓
+Repository
+  ↓
+PostgreSQL
 ```
 
-```
-Request
-   │
-   ▼
-┌─────────┐     ┌─────────┐     ┌────────────┐     ┌──────────────┐
-│  Router │ ──▶ │ Service │ ──▶ │ Repository │ ──▶ │  PostgreSQL  │
-└─────────┘     └─────────┘     └────────────┘     └──────────────┘
-                     │
-                     ▼
-             Domain Exceptions
-                     │
-                     ▼
-        Global Exception Handlers (main.py)
-                     │
-                     ▼
-              HTTP Response
+### Responsibilities
+
+**Router**
+
+- Handles HTTP concerns.
+- Parses requests.
+- Extracts authentication information.
+- Calls service-layer functions.
+- Returns HTTP responses.
+- Does not contain business logic or direct database access.
+
+**Service**
+
+- Owns business logic.
+- Handles authentication and token verification.
+- Coordinates operations across repositories.
+- Does not directly manage HTTP responses.
+
+**Repository**
+
+- Owns database access.
+- Executes SQLAlchemy queries.
+- Handles persistence-related operations.
+- Does not contain business rules.
+
+**Exceptions**
+
+- Domain-specific exceptions can be raised from service and repository layers.
+- Global exception handlers in `main.py` translate them into HTTP responses.
+
+```text
+                         ┌──────────────┐
+                         │   PostgreSQL │
+                         └──────▲───────┘
+                                │
+                         ┌──────┴───────┐
+                         │  Repository  │
+                         └──────▲───────┘
+                                │
+                         ┌──────┴───────┐
+                         │    Service   │
+                         └──────▲───────┘
+                                │
+                         ┌──────┴───────┐
+                         │    Router    │
+                         └──────▲───────┘
+                                │
+                             Request
 ```
 
-This means: a service function never returns an HTTP status code, and a router never touches SQLAlchemy directly.
+This means a service function never returns an HTTP status code, and a router never directly touches SQLAlchemy.
 
-### Project structure
+---
 
-```
+## Project Structure
+
+```text
 app/
-├── core/                 # config, security, db session, exceptions, logging
+├── core/                 # config, security, DB session, exceptions, logging
 ├── models/               # SQLAlchemy ORM models
 ├── schemas/              # Pydantic request/response schemas
-├── repository/           # DB access layer (one repository per entity)
+├── repository/           # Database access layer
 ├── services/             # Business logic layer
 ├── router/               # FastAPI route definitions
-└── dependencies/         # Reusable FastAPI dependencies (e.g. current-user resolution)
+└── dependencies/         # Reusable FastAPI dependencies
 
 alembic/
-└── versions/             # Migration history
+└── versions/             # Database migration history
+
+tests/
+├── unit/                 # Unit tests
+└── integration/          # Integration/API tests
+
+.github/
+└── workflows/            # GitHub Actions CI workflows
+
+Dockerfile                # Application container definition
+docker-compose.yaml       # Local multi-container development environment
+pyproject.toml            # Ruff/project tooling configuration
+requirements.txt          # Python dependencies
 ```
 
 ---
 
-## Authentication & Token Security
+# Authentication & Token Security
 
-This is the part of the project I spent the most deliberate effort on.
+This is the part of the project that received the most deliberate attention.
 
-### Access tokens
-Short-lived JWTs, signed and verified server-side, carrying the user's identity (`sub`) — stateless, never persisted.
+## Access Tokens
 
-### Refresh tokens — rotation with reuse detection
+Access tokens are short-lived JWTs that are signed and verified server-side.
 
-Rather than a single long-lived refresh token, this project implements **refresh token rotation** with **family-based reuse detection**, the same pattern used by production auth systems (e.g. Auth0):
+They contain the user's identity through the `sub` claim and are not persisted in the database.
 
-- Every refresh token belongs to a **token family** (`family_id`), created once at login and carried forward through every subsequent rotation in that session.
-- Each time a refresh token is used, it is marked `is_used` and a **new** refresh token is issued in its place, inheriting the same `family_id`.
-- If a refresh token that's already been used (or revoked) is presented again, the system treats this as a signal of theft — **the entire token family is revoked immediately**, invalidating that whole session chain.
-- Revocation is scoped intentionally:
-  - **Reuse detected on one device's session** → revoke only that family (that device/session).
-  - **Explicit "log out everywhere" / password change** → revoke all families for that `user_id`.
+## Refresh Tokens — Rotation with Reuse Detection
 
-```
+Rather than using a single long-lived refresh token, the project implements **refresh token rotation with family-based reuse detection**.
+
+- Every refresh token belongs to a **token family** identified by `family_id`.
+- The family is created when the user logs in.
+- Each refresh operation invalidates the current refresh token.
+- A new refresh token is issued with the same `family_id`.
+- If an already-used or revoked refresh token is presented again, the system treats it as potential token theft.
+- The entire token family is revoked when reuse is detected.
+
+Revocation is intentionally scoped:
+
+- **Reuse detected on one device/session** → revoke that token family.
+- **Log out everywhere / password change** → revoke all token families belonging to the user.
+
+```text
 Login
   │
   ▼
-new family_id ──┬─▶ refresh_token_v1 (family_id=F1)
-                │
-        [access token expires]
-                │
-                ▼
-        POST /refresh (token_v1)
-                │
-        ┌───────┴────────┐
-        │ token unused?  │──No──▶ REVOKE entire family F1 (reuse/theft detected)
-        └───────┬────────┘
-                │ Yes
-                ▼
-     mark token_v1 as used
-                │
-                ▼
-     issue refresh_token_v2 (same family_id=F1)
-     issue new access_token
+Create token family F1
+  │
+  ▼
+Refresh Token V1
+  │
+  │ Access token expires
+  ▼
+POST /refresh
+  │
+  ▼
+Is V1 already used?
+  │
+  ├── Yes ──► Revoke entire family F1
+  │
+  └── No
+       │
+       ▼
+   Mark V1 as used
+       │
+       ▼
+   Issue V2
+   Same family F1
 ```
 
 ### Why this matters
-A stolen refresh token that gets used by an attacker *after* the legitimate client has already rotated it will be detected and the whole session killed — rather than silently granting the attacker persistent access.
+
+If an attacker obtains a refresh token and attempts to reuse it after the legitimate client has already rotated it, the reuse can be detected and the affected session family can be revoked.
 
 ---
 
-## Database Schema
+# Authorization
 
-Core entities (six tables), designed around real booking-domain constraints rather than a flattened "one big table" model:
+The application implements role-based access control with roles including:
 
-- **users** — auth identity, role (`organizer` / `customer` / `admin`)
-- **refresh_tokens** — rotation chain, family-scoped, indexed on `family_id` and `user_id`, cascades on user deletion
-- **events** — owned by an organizer (`organizer_id` resolved server-side from the JWT — never trusted from client input)
-- **seats**, **bookings**, **booking_seats**, **payments** *(in progress)*
+- `organizer`
+- `customer`
+- `admin`
 
-Key design decisions:
-- `organizer_id` on event creation always comes from the authenticated user's token, never from the request body — preventing a customer from creating events "as" someone else.
-- Seat availability is derived from the `seats` table, not a cached counter on `events`, to avoid drift between the source of truth and a denormalized count.
-- All foreign keys used in filtering/joins are explicitly indexed (PostgreSQL does **not** auto-index foreign key columns).
+Authorization is enforced through authenticated user context rather than trusting sensitive identity information supplied by the client.
+
+For example, when an organizer creates an event, the `organizer_id` is resolved from the authenticated user's JWT rather than being accepted from the request body.
+
+This prevents a user from attempting to create an event on behalf of another organizer.
 
 ---
 
-## Error Handling
+# Database
 
-Domain exceptions are defined once (`app/core/exceptions.py`) and mapped to HTTP responses in a single place (`app/main.py`), rather than scattered `HTTPException` calls throughout routers/services:
+The project uses **PostgreSQL** with SQLAlchemy 2.0 and Alembic.
+
+Core entities include:
+
+- `users`
+- `refresh_tokens`
+- `events`
+- `seats`
+- `bookings`
+- `booking_seats`
+- `payments` *(in progress)*
+
+### Key database design decisions
+
+- Foreign keys used for filtering and joins are explicitly indexed.
+- `organizer_id` is derived from authenticated user context.
+- Seat availability is derived from the seat records rather than relying on a potentially stale cached counter.
+- Database schema changes are managed through Alembic migrations.
+
+---
+
+# Error Handling
+
+Domain exceptions are defined centrally and translated into HTTP responses through global exception handlers.
 
 | Exception | HTTP Status |
-|---|---|
+|---|---:|
 | `UserNotFound` | 404 |
 | `UserAlreadyExists` | 409 |
 | `InvalidCredentialError` | 401 |
 | `UserNotAuthorized` | 403 |
-| `InvalidTokenError` / `TokenExpiredError` | 401 |
+| `InvalidTokenError` | 401 |
+| `TokenExpiredError` | 401 |
 | `CustomIntegrityError` | 409 |
 | `DatabaseUnavailableError` | 503 |
 
-Repository-layer DB errors (`IntegrityError`, `OperationalError`, etc.) are caught and translated into these domain exceptions via a shared context manager (`handle_db_error`), so services never deal with raw SQLAlchemy exceptions directly.
+Repository-layer database errors such as `IntegrityError` and `OperationalError` are translated into domain-specific exceptions so that service-layer code does not need to work directly with raw SQLAlchemy database exceptions.
 
 ---
 
-## Getting Started
+# Rate Limiting
 
-### Prerequisites
+Redis is used to implement rate limiting for sensitive authentication endpoints.
+
+Current limits include:
+
+| Endpoint | Limit |
+|---|---:|
+| Login | 5 requests / 3 minutes |
+| Register | 15 requests / minute |
+| Refresh Token | 10 requests / 24 hours |
+
+The rate limiter uses Redis as the shared counter store.
+
+This provides a centralized rate-limiting mechanism rather than maintaining counters inside individual application processes.
+
+---
+
+# Testing
+
+Testing is implemented using **Pytest** and FastAPI's `TestClient`.
+
+The project contains unit and integration tests covering areas such as:
+
+- Authentication
+- JWT validation
+- Refresh token rotation
+- Refresh token reuse detection
+- Repository behavior
+- API endpoints
+- Rate limiting
+- Security-related edge cases
+
+Run the complete test suite with:
+
+```bash
+pytest
+```
+
+The CI pipeline also runs the complete test suite, including tests that require Redis.
+
+---
+
+# Code Quality & Linting
+
+The project uses **Ruff** for Python linting.
+
+Run Ruff locally:
+
+```bash
+ruff check .
+```
+
+Ruff configuration is maintained in:
+
+```text
+pyproject.toml
+```
+
+Project-specific configuration is used where certain linting rules are not applicable to the framework or project conventions.
+
+The goal is not simply to make the linter pass; Ruff is used to identify genuine code-quality issues and potential bugs before code reaches the protected `main` branch.
+
+---
+
+# Docker & Docker Compose
+
+The project uses Docker for containerized local development.
+
+Docker Compose is used to run the application's infrastructure dependencies together:
+
+```text
+┌─────────────────────────────┐
+│       Docker Compose        │
+│                             │
+│  ┌─────────────┐            │
+│  │ PostgreSQL  │            │
+│  └─────────────┘            │
+│                             │
+│  ┌─────────────┐            │
+│  │    Redis    │            │
+│  └─────────────┘            │
+└─────────────────────────────┘
+```
+
+The `docker-compose.yaml` defines the required services and their networking.
+
+### Start the development services
+
+```bash
+docker compose up -d
+```
+
+### Stop the services
+
+```bash
+docker compose down
+```
+
+### View running containers
+
+```bash
+docker compose ps
+```
+
+The application container is built using the project's `Dockerfile`, while PostgreSQL and Redis are provided as separate services.
+
+Docker Compose also provides the internal service networking required for the containers to communicate with each other.
+
+---
+
+# CI / Continuous Integration
+
+The project uses **GitHub Actions** for continuous integration.
+
+The CI pipeline automatically runs when code is pushed or when a pull request is opened or updated.
+
+```text
+Push / Pull Request
+        │
+        ▼
+GitHub Actions
+        │
+        ▼
+Setup Python
+        │
+        ▼
+Install Dependencies
+        │
+        ├───────────────┐
+        ▼               ▼
+     Ruff Check       Redis
+        │               │
+        └───────┬───────┘
+                ▼
+             Pytest
+                │
+                ▼
+          CI Pass / Fail
+```
+
+Redis is started as a Docker container during the test job because the rate-limiting tests require a real Redis service.
+
+The CI process:
+
+1. Checks out the repository.
+2. Sets up Python 3.12.
+3. Installs dependencies.
+4. Starts Redis using Docker Compose.
+5. Waits for Redis to become healthy.
+6. Runs Ruff.
+7. Runs the complete Pytest suite.
+8. Cleans up the Redis container.
+
+---
+
+# Branch Protection & Pull Requests
+
+The `main` branch is protected.
+
+Changes are developed on feature/development branches and submitted through pull requests.
+
+```text
+Development Branch
+        │
+        ▼
+      Push
+        │
+        ▼
+ GitHub Pull Request
+        │
+        ▼
+ GitHub Actions
+        │
+        ├── Ruff
+        └── Pytest
+        │
+        ▼
+ Required Checks Pass
+        │
+        ▼
+     Code Review
+        │
+        ▼
+   Merge into main
+```
+
+Direct pushes to `main` are disabled.
+
+This ensures that changes merged into `main` have passed the required CI checks.
+
+---
+
+# Getting Started
+
+## Prerequisites
+
 - Python 3.12+
-- PostgreSQL running locally (or via Docker)
+- Docker
+- Docker Compose
+- Git
 
-### Setup
+PostgreSQL and Redis can be run through Docker Compose.
+
+## Clone the Repository
 
 ```bash
 git clone https://github.com/SHEKHAR-Y/Multi-tenant-Event-Booking-Ticketing-Platform.git
+
 cd Multi-tenant-Event-Booking-Ticketing-Platform
-
-python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-
-pip install -r requirements.txt
-
-cp .env.example .env           # fill in your local DB URL, secret key, etc.
-
-alembic upgrade head           # apply migrations
 ```
 
-### Run the API
+## Create Virtual Environment
+
+```bash
+python -m venv .venv
+```
+
+Activate it:
+
+### Linux / macOS
+
+```bash
+source .venv/bin/activate
+```
+
+### Windows
+
+```powershell
+.venv\Scripts\activate
+```
+
+## Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+## Environment Variables
+
+Create your local environment file:
+
+```bash
+cp .env.example .env
+```
+
+Configure the required values in `.env`, including:
+
+- Database URL
+- Redis URL
+- Secret key
+- JWT configuration
+- Application configuration
+
+## Start Infrastructure
+
+Start PostgreSQL and Redis:
+
+```bash
+docker compose up -d postgres redis
+```
+
+Or start all Compose services:
+
+```bash
+docker compose up -d
+```
+
+## Apply Database Migrations
+
+```bash
+alembic upgrade head
+```
+
+## Run the API
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-API docs available at `http://127.0.0.1:8000/docs` (FastAPI's auto-generated Swagger UI).
+API documentation:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+FastAPI provides the interactive Swagger UI automatically.
+
+---
+
+# Development Commands
 
 ### Run tests
 
@@ -205,34 +559,107 @@ API docs available at `http://127.0.0.1:8000/docs` (FastAPI's auto-generated Swa
 pytest
 ```
 
+### Run Ruff
+
+```bash
+ruff check .
+```
+
+### Automatically fix supported Ruff issues
+
+```bash
+ruff check . --fix
+```
+
+### Format code
+
+```bash
+ruff format .
+```
+
+### Start Docker services
+
+```bash
+docker compose up -d
+```
+
+### Stop Docker services
+
+```bash
+docker compose down
+```
+
+### Check Docker services
+
+```bash
+docker compose ps
+```
+
+### Run migrations
+
+```bash
+alembic upgrade head
+```
+
 ---
 
-## Current Status
+# Current Status
 
-✅ JWT authentication with rotating refresh tokens + reuse detection
-✅ RBAC (organizer / customer roles)
-✅ Event creation, scoped to authenticated organizer
-✅ Centralized exception handling
-✅ Alembic-managed schema history
-✅ Integration test coverage on auth flows
-🚧 Seat management, bookings, payments
-🚧 Multi-tenancy isolation model (organization-level, beyond role-based access)
-🚧 Docker Compose setup
-🚧 Redis + Celery for async ticket/payment processing
+### Completed
+
+- [x] JWT authentication
+- [x] Short-lived access tokens
+- [x] Rotating refresh tokens
+- [x] Refresh token reuse detection
+- [x] Token family-based revocation
+- [x] Role-based access control
+- [x] Organizer/customer/admin roles
+- [x] Event creation
+- [x] Authenticated organizer ownership
+- [x] Centralized exception handling
+- [x] Alembic database migrations
+- [x] PostgreSQL integration
+- [x] Redis integration
+- [x] Redis-backed rate limiting
+- [x] Unit and integration testing with Pytest
+- [x] Docker configuration
+- [x] Docker Compose local development environment
+- [x] Ruff linting
+- [x] GitHub Actions CI
+- [x] Redis service in CI for Redis-dependent tests
+- [x] Protected `main` branch with pull-request workflow
+
+### In Progress
+
+- [ ] Seat management
+- [ ] Booking workflow
+- [ ] Concurrency-safe seat reservation
+- [ ] Payment integration
+- [ ] Multi-tenant organization-level isolation
+- [ ] Celery-based asynchronous processing
+- [ ] Production deployment
+- [ ] Production Redis deployment
+- [ ] Production observability and monitoring
 
 ---
 
-## Roadmap
+# Roadmap
 
-- [ ] Seat inventory + booking with concurrency-safe seat locking
-- [ ] Payment integration (mock/sandbox)
+- [ ] Implement seat inventory management
+- [ ] Implement concurrency-safe seat locking
+- [ ] Implement complete booking workflow
+- [ ] Add payment integration using a sandbox/mock provider
 - [ ] Redis-backed caching for event listings
-- [ ] Celery for async notification/email dispatch
-- [ ] Dockerized local dev environment
-- [ ] Declarative role-based authorization dependency (replacing inline role checks)
+- [ ] Celery for asynchronous notification/email processing
+- [ ] Declarative role-based authorization dependencies
+- [ ] Implement organization-level multi-tenancy isolation
+- [ ] Production deployment
+- [ ] Add production logging and monitoring
+- [ ] Improve CI/CD pipeline
+- [ ] Build and publish production Docker images
 
 ---
 
-## License
+# License
 
 MIT
