@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -9,5 +9,26 @@ from app.services.auth.user import UserService
 router = APIRouter()
 
 @router.post("/v1/refresh_access_token", response_model=UserRefreshTokenResponse, status_code=status.HTTP_201_CREATED, dependencies=[Depends(rate_limit(requests=10000000, window_seconds=86400))])
-def refresh_access_token(request: Request, token_pair: UserRefreshTokenRequest, db: Session=Depends(get_db)):
-    return UserService(db=db).refresh_access_token_service(refresh_token=token_pair.refresh_token)
+def refresh_access_token(request: Request, response: Response, token_pair: UserRefreshTokenRequest, db: Session=Depends(get_db)):
+    tokens = UserService(db=db).refresh_access_token_service(refresh_token=token_pair.refresh_token)
+    
+    response.set_cookie(
+                key="refresh_token",
+                value=tokens.refresh_token,
+                httponly=True, 
+                secure=True, 
+                samesite="lax",
+                max_age=259200,      
+                path="/refresh",   
+            )
+        
+    response.set_cookie(
+            key="access_token",
+            value=tokens.access_token,
+            httponly=True,
+            secure=True,
+            samesite="lax",
+            max_age=900
+        )
+        
+    return tokens

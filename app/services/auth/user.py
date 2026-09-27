@@ -21,6 +21,7 @@ from app.models.user import User
 from app.repository.user import UserRepository
 from app.schemas.user import (
     UserLoginResponse,
+    UserRefreshTokenResponse,
     UserRegisterRequest,
     UserRegisterResponse,
 )
@@ -116,7 +117,7 @@ class UserService:
             refresh_token=refresh_token
         )
 
-    def refresh_access_token_service(self, refresh_token: str) -> UserLoginResponse:
+    def refresh_access_token_service(self, refresh_token: str) -> UserRefreshTokenResponse:
         # check if the refresh token is provided
         if not refresh_token :
             raise InvalidCredentialError("Refresh token is required")

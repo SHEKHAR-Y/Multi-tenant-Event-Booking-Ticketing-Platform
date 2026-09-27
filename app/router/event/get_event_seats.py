@@ -7,7 +7,7 @@ from app.services.event import EventService
 router = APIRouter()
 
 
-@router.get("/v1/event/seats", status_code=status.HTTP_200_OK)
+@router.get("/v1/event-seats/{event_id}", status_code=status.HTTP_200_OK)
 def get_event_seats(request: Request, event_id: str, db: Session = Depends(get_db)):
     eventservice = EventService(db=db)
 

@@ -27,6 +27,11 @@ class EventRepository:
 
         return self.db.scalars(statement=statement).all()
 
+    def get_event_with_id(self, id: UUID) -> Event | None:
+        statement = select(Event).where(Event.id == id)
+
+        return self.db.scalar(statement=statement)
+
     def creat_seats_for_event(self, event_id: UUID, seat_list: list[SeatDetails]) -> bool:
         try : 
             seat_for_event = [

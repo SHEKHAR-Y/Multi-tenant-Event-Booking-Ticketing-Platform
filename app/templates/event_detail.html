@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block filename %}event_detail.html{% endblock %}
+{% block tab_events %}tab-active{% endblock %}
+
+{% block content %}
+<pre class="code-block"><span class="c">// events.detail(<span class="str">"{{ event_id }}"</span>)</span>
+</pre>
+
+<div id="event-status" class="error-line" style="display:none;"></div>
+<div id="event-info" class="code-block">// loading event...</div>
+
+<div class="panel-switch">
+    <button id="btn-seats" class="btn btn-primary" onclick="loadSeats()">select_seats()</button>
+</div>
+
+<div id="seats-status" class="error-line" style="display:none;"></div>
+
+<div id="seat-legend" class="seat-legend" style="display:none;">
+    <span><span class="seat-dot seat-dot-available"></span>available</span>
+    <span><span class="seat-dot seat-dot-locked"></span>locked</span>
+    <span><span class="seat-dot seat-dot-booked"></span>booked</span>
+    <span><span class="seat-dot seat-dot-selected"></span>selected</span>
+</div>
+
+<div id="seat-map" class="seat-map"></div>
+
+<div id="seat-summary" class="seat-summary" style="display:none;">
+    <div class="seat-summary-title">// selected seats</div>
+    <ul id="summary-list" class="seat-summary-list"></ul>
+    <div id="summary-total" class="seat-summary-total"></div>
+</div>
+
+<script>
+const EVENT_ID = "{{ event_id }}";
+const EVENT_DETAIL_URL = '/api/v1/event/' + EVENT_ID;      // confirm this matches your real route once added
+const SEATS_URL = '/api/v1/event-seats/' + EVENT_ID;
+
+let seats = [];
+const selectedSeats = new Map();   // seat_id -> seat object
+
+async function loadEventInfo() {
+    const info = document.getElementById('event-info');
+    const statusBox = document.getElementById('event-status');
+
+    try {
+        const res = await fetch(EVENT_DETAIL_URL, { credentials: 'same-origin' });
+        if (!res.ok) {
+            statusBox.textContent = '// error: could not load event (' + res.status + ')';
+            statusBox.style.display = 'block';
+            info.textContent = '';
+            return;
+        }
+        const ev = await res.json();
+        info.innerHTML =
+            '<span class="kw">const</span> <span class="var">event</span> = {\n' +
+            '  <span class="prop">title</span>: <span class="str">"' + ev.title + '"</span>,\n' +
+            '  <span class="prop">description</span>: <span class="str">"' + ev.description + '"</span>,\n' +
+            '  <span class="prop">venue</span>: <span class="str">"' + ev.venue_name + ', ' + ev.venue_address + '"</span>,\n' +
+            '  <span class="prop">start_time</span>: <span class="str">"' + new Date(ev.start_time).toLocaleString() + '"</span>,\n' +
+            '  <span class="prop">end_time</span>: <span class="str">"' + new Date(ev.end_time).toLocaleString() + '"</span>,\n' +
+            '};';
+    } catch (err) {
+        statusBox.textContent = '// error: network error while loading event';
+        statusBox.style.display = 'block';
+    }
+}
+
+// ---- field-name accessors: adjust here if your real Seat schema differs ----
+function seatId(seat) { return seat.id || seat.seat_id; }
+function seatRow(seat) { return seat.row_label || seat.row || '?'; }
+function seatNumber(seat) { return seat.seat_number || seat.number || '?'; }
+function seatCategory(seat) { return seat.category || 'standard'; }
+function seatPrice(seat) { return Number(seat.price || 0); }
+function seatStatus(seat) { return (seat.status || 'available').toLowerCase(); }
+// -----------------------------------------------------------------------
+
+function renderSeats() {
+    const map = document.getElementById('seat-map');
+    map.innerHTML = '';
+
+    const rows = {};
+    seats.forEach(seat => {
+        const key = seatRow(seat);
+        if (!rows[key]) rows[key] = [];
+        rows[key].push(seat);
+    });
+
+    Object.keys(rows).sort().forEach(rowKey => {
+        const rowSeats = rows[rowKey].sort((a, b) => seatNumber(a) - seatNumber(b));
+
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'seat-row';
+
+        const label = document.createElement('span');
+        label.className = 'seat-row-label';
+        label.textContent = rowKey;
+        rowDiv.appendChild(label);
+
+        rowSeats.forEach(seat => {
+            const status = seatStatus(seat);
+            const isSelected = selectedSeats.has(seatId(seat));
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'seat ' + (isSelected ? 'seat-selected' : 'seat-' + status);
+            btn.textContent = seatNumber(seat);   // always the seat's real number
+            btn.title = seatRow(seat) + seatNumber(seat) + ' — ' + seatCategory(seat) + ' — ' + seatPrice(seat).toFixed(2);
+
+            if (status !== 'available') {
+                btn.disabled = true;
+            } else {
+                btn.addEventListener('click', () => toggleSeat(seat));
+            }
+            rowDiv.appendChild(btn);
+        });
+
+        map.appendChild(rowDiv);
+    });
+}
+
+function toggleSeat(seat) {
+    const key = seatId(seat);
+    if (selectedSeats.has(key)) {
+        selectedSeats.delete(key);
+    } else {
+        selectedSeats.set(key, seat);
+    }
+    renderSeats();
+    renderSummary();
+}
+
+function renderSummary() {
+    const summary = document.getElementById('seat-summary');
+    const list = document.getElementById('summary-list');
+    const totalEl = document.getElementById('summary-total');
+
+    if (selectedSeats.size === 0) {
+        summary.style.display = 'none';
+        return;
+    }
+
+    summary.style.display = 'block';
+    list.innerHTML = '';
+    let total = 0;
+
+    selectedSeats.forEach(seat => {
+        total += seatPrice(seat);
+        const li = document.createElement('li');
+        li.innerHTML =
+            '<span class="row">' + seatRow(seat) + seatNumber(seat) + '</span> — ' +
+            seatCategory(seat) + ' — <span class="price">' + seatPrice(seat).toFixed(2) + '</span>';
+        list.appendChild(li);
+    });
+
+    totalEl.textContent = 'total: ' + total.toFixed(2);
+}
+
+async function loadSeats() {
+    const statusBox = document.getElementById('seats-status');
+    const legend = document.getElementById('seat-legend');
+    const btn = document.getElementById('btn-seats');
+
+    statusBox.style.display = 'none';
+    btn.disabled = true;
+    selectedSeats.clear();
+
+    try {
+        const res = await fetch(SEATS_URL, { credentials: 'same-origin' });
+        if (!res.ok) {
+            statusBox.textContent = '// error: could not load seats (' + res.status + ')';
+            statusBox.style.display = 'block';
+            return;
+        }
+        seats = await res.json();
+        if (!seats.length) {
+            statusBox.textContent = '// no seats configured for this event yet';
+            statusBox.style.display = 'block';
+            return;
+        }
+        legend.style.display = 'flex';
+        renderSeats();
+        renderSummary();
+    } catch (err) {
+        statusBox.textContent = '// error: network error while loading seats';
+        statusBox.style.display = 'block';
+    } finally {
+        btn.disabled = false;
+    }
+}
+
+loadEventInfo();
+</script>
+{% endblock %}
