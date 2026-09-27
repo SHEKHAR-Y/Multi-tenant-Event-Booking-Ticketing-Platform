@@ -68,6 +68,12 @@ class EventService:
 
         return True
 
+    def get_event(self, event_id: str) -> Event | None: 
+        id: UUID = UUID(event_id)
+        result = self.repo.get_event_with_id(id)
+
+        return result
+
     def get_all_events(self) -> list[Event] | None:
         result = self.repo.get_all_events()
 

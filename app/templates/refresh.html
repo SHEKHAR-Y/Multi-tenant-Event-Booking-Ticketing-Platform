@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block filename %}refresh.html{% endblock %}
+{% block tab_home %}{% endblock %}
+
+{% block content %}
+<pre class="code-block"><span class="c">// auth.refresh_session()</span>
+<span class="c">// refreshing your session...</span>
+</pre>
+
+<div id="refresh-status" class="code-block">
+    <span class="c">// checking refresh token...</span>
+</div>
+
+<div id="error-box" class="error-line" style="display:none;"></div>
+
+<script>
+async function refreshSession() {
+    const statusBox = document.getElementById('refresh-status');
+    const errorBox = document.getElementById('error-box');
+
+    const accessToken = "{{ access_token }}";
+    const refreshToken = "{{ refresh_token }}";
+
+    console.log(accessToken);
+    console.log(refreshToken);
+    try {
+        statusBox.innerHTML =
+            '<span class="c">// refreshing session...</span>';
+
+        const res = await fetch('/api/v1/refresh_access_token', {
+            method: 'POST',
+            headers: {
+        'Content-Type': 'application/json'
+    },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+        refresh_token: refreshToken
+    })
+        });
+
+        if (res.ok) {
+            statusBox.innerHTML =
+                '<span class="c">// session refreshed successfully</span>';
+
+            window.location.href = '/';
+            return;
+        }
+
+        let message = 'could not refresh session';
+
+        try {
+            const data = await res.json();
+
+            if (data.detail) {
+                message =
+                    typeof data.detail === 'string'
+                        ? data.detail
+                        : message;
+            }
+        } catch (err) {
+            // Response wasn't JSON; keep the default message.
+        }
+
+        statusBox.innerHTML = '';
+        errorBox.textContent = '// error: ' + message;
+        errorBox.style.display = 'block';
+
+    } catch (err) {
+        statusBox.innerHTML = '';
+
+        errorBox.textContent =
+            '// error: network error, please try again';
+
+        errorBox.style.display = 'block';
+    }
+}
+
+refreshSession();
+</script>
+{% endblock %}

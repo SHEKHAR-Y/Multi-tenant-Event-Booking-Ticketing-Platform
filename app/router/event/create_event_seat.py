@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -14,8 +15,13 @@ def create_bulk_seats_for_event(request: Request, seat: BulkSeatCreationRequest,
     eventservice = EventService(db=db)
     result = eventservice.create_event_seats_in_bulk(seat_details=seat, current_user=current_user)
     if not result:
-        return "seat creation failed"
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"error": "event creation failed"}
+        )
 
-    return "success" 
+    return JSONResponse(
+        content={"status": "success"}
+    ) 
 
 # , response_model=list[SeatCreationResponse]

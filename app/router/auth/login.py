@@ -13,15 +13,15 @@ router = APIRouter()
 def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     # call the service to check the passowrd is correct and check if the user exist 
     tokens = UserService(db=db).login_user_service(form_data.username, form_data.password)
-
     response.set_cookie(
-        key="access_token",
-        value=tokens.access_token,
-        httponly=False,
-        secure=False,
-        samesite="lax",
-        max_age=900
-    )
+            key="refresh_token",
+            value=tokens.refresh_token,
+            httponly=False, 
+            secure=False, 
+            samesite="lax",
+            max_age=259200,      
+            path="/refresh",   
+        )
     
     response.set_cookie(
             key="access_token",
@@ -32,15 +32,5 @@ def login(request: Request, response: Response, form_data: OAuth2PasswordRequest
             max_age=900
         )
     
-    response.set_cookie(
-        key="refresh_token",
-        value=tokens.refresh_token,
-        httponly=False, 
-        secure=False, 
-        samesite="lax",
-        max_age=259200,      
-        path="/api/v1/refresh_access_token",   
-    )
-
     return tokens
 

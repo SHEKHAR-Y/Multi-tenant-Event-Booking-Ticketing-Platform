@@ -15,3 +15,11 @@ def get_all_events(request: Request, db:Session =Depends(get_db)):
     result = eventservice.get_all_events()
     return result 
 
+
+# get event with a particular id
+@router.get("/v1/event/{event_id}", status_code=status.HTTP_200_OK)
+def get_event(request: Request, event_id: str, db: Session = Depends(get_db)):
+    eventservice = EventService(db=db)
+    
+    result = eventservice.get_event(event_id)
+    return result 

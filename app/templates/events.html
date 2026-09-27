@@ -81,13 +81,16 @@ async function loadEvents() {
             output.textContent = '// no events yet';
             return;
         }
-        output.innerHTML = events.map(ev => (
-            '<div class="event-row">' +
-            '<span class="kw">event</span> ' +
-            '<span class="str">"' + ev.title + '"</span> ' +
-            '<span class="c">// ' + ev.venue_name + ' — ' + new Date(ev.start_time).toLocaleString() + '</span>' +
-            '</div>'
-        )).join('');
+        output.innerHTML = events.map(ev => {
+            const id = ev.event_id || ev.id;   // confirm which field your get-all response actually uses
+            return (
+                '<a class="event-row" href="/events/' + id + '">' +
+                '<span class="kw">event</span> ' +
+                '<span class="str">"' + ev.title + '"</span> ' +
+                '<span class="c">// ' + ev.venue_name + ' — ' + new Date(ev.start_time).toLocaleString() + '</span>' +
+                '</a>'
+            );
+        }).join('');
     } catch (err) {
         statusBox.textContent = '// error: network error while loading events';
         statusBox.style.display = 'block';

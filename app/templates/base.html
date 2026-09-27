@@ -25,6 +25,8 @@
             {% if user %}
                 <span class="tab tab-user">{{ user.email }}</span>
                 <a href="/api/v1/logout" id="logout-btn" class="tab tab-action">logout()</a>
+                <a href="/refresh" id="refresh-session-btn" class="tab tab-action">refresh_session()</a>
+
             {% else %}
                 <a href="/register" class="tab">register()</a>
                 <a href="/login" class="tab tab-action">login()</a>
@@ -49,7 +51,7 @@
                         console.error("Logout failed:", err);
                     }
                     });
-                }
+                }    
             </script>
         </div>
 
