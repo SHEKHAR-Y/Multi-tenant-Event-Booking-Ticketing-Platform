@@ -1,12 +1,12 @@
-from uuid import UUID, uuid4
-from datetime import datetime, timezone
+from uuid import UUID
 
-from sqlalchemy.orm import Session
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-from app.models.seat import Seat, SeatStatus, Booking
+from app.models.seat import Booking, Seat, SeatStatus
 
-class SeatRepository():
+
+class SeatRepository:
     def __init__(self, db: Session):
         self.db = db
 

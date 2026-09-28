@@ -13,11 +13,11 @@ from app.core.exception_handlers import (
     integrity_error,
     invalid_credential_error,
     invalid_token_handler,
+    seat_not_available,
     token_expired_handler,
     user_already_exist,
     user_not_authorized,
     user_not_found,
-    seat_not_available
 )
 
 # exception handling 
@@ -27,22 +27,22 @@ from app.core.exceptions import (
     EventNotFound,
     InvalidCredentialError,
     InvalidTokenError,
+    SeatNotAvailable,
     TokenExpiredError,
     UserAlreadyExists,
     UserNotAuthorized,
     UserNotFound,
-    SeatNotAvailable
 )
 from app.router.auth.change_role import router as change_role_router
 from app.router.auth.login import router as login
 from app.router.auth.logout import router as logout_router
 from app.router.auth.refresh_token import router as refresh_token_router
 from app.router.auth.register import router as register
+from app.router.event.book_seat import router as book_seats
 from app.router.event.create_event import router as create_event_router
 from app.router.event.create_event_seat import router as create_event_seat_router
 from app.router.event.get_event import router as get_event_router
 from app.router.event.get_event_seats import router as get_event_seats
-from app.router.event.book_seat import router as book_seats
 from app.router.http_exception_handler import http_exception_handler
 
 # frontend router

@@ -11,7 +11,6 @@ from app.core.exceptions import (
     UserAlreadyExists,
     UserNotAuthorized,
     UserNotFound,
-    SeatNotAvailable
 )
 
 

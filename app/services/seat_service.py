@@ -1,13 +1,13 @@
 from sqlalchemy.orm import Session
 
-from app.repository.seat import SeatRepository
-from app.schemas.seat import SeatBookingRequest
-from app.models.user import User
-
 from app.core.db_error_handler import handle_db_error
 from app.core.exceptions import SeatNotAvailable
+from app.models.user import User
+from app.repository.seat import SeatRepository
+from app.schemas.seat import SeatBookingRequest
 
-class SeatService():
+
+class SeatService:
     def __init__(self, db: Session):
         self.db = db
         self.repo = SeatRepository(self.db)
