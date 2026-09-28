@@ -69,3 +69,9 @@ async def event_not_found_handler(request: Request, exc: EventNotFound):
         status_code=status.HTTP_404_NOT_FOUND,
         content={"error": exc.message}
     )
+
+async def seat_not_available(request: Request, exc: EventNotFound):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"error": exc.message}
+    )

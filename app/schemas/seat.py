@@ -20,3 +20,7 @@ class SeatCreationResponse(BaseModel):
     seat_number: int = Field(gt=0)
     price: Decimal 
     status: str
+
+class SeatBookingRequest(BaseModel):
+    event_id: UUID
+    id_list: list[UUID]

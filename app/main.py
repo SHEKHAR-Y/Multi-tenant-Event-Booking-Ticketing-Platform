@@ -13,6 +13,7 @@ from app.core.exception_handlers import (
     integrity_error,
     invalid_credential_error,
     invalid_token_handler,
+    seat_not_available,
     token_expired_handler,
     user_already_exist,
     user_not_authorized,
@@ -26,6 +27,7 @@ from app.core.exceptions import (
     EventNotFound,
     InvalidCredentialError,
     InvalidTokenError,
+    SeatNotAvailable,
     TokenExpiredError,
     UserAlreadyExists,
     UserNotAuthorized,
@@ -36,6 +38,7 @@ from app.router.auth.login import router as login
 from app.router.auth.logout import router as logout_router
 from app.router.auth.refresh_token import router as refresh_token_router
 from app.router.auth.register import router as register
+from app.router.event.book_seat import router as book_seats
 from app.router.event.create_event import router as create_event_router
 from app.router.event.create_event_seat import router as create_event_seat_router
 from app.router.event.get_event import router as get_event_router
@@ -74,6 +77,7 @@ app.add_exception_handler(DatabaseUnavailableError, database_unavailable)
 app.add_exception_handler(CustomIntegrityError, integrity_error)
 app.add_exception_handler(InvalidCredentialError, invalid_credential_error)
 app.add_exception_handler(EventNotFound, event_not_found_handler)
+app.add_exception_handler(SeatNotAvailable, seat_not_available)
 
 
 app.include_router(register, prefix="/api", tags=["Authentication"])
@@ -87,17 +91,10 @@ app.include_router(create_event_router, prefix="/api", tags=["Event"])
 app.include_router(get_event_router, prefix="/api", tags=["Event"])
 app.include_router(create_event_seat_router, prefix="/api", tags=["Event"])
 app.include_router(get_event_seats, prefix="/api", tags=["Event"])
+app.include_router(book_seats, prefix="/api", tags=["Event"])
 
 app.include_router(frontend_router)
 
 @app.get("/health", dependencies=[Depends(rate_limit(requests=5, window_seconds=60))])
 def health_check():
     return {"message": "API is healthy and running!"}
-# LIVE TEST Thu 24 Sep 2026 04:51:59 PM IST
-
-
-
-
-# small changes to test workflow
-
-print("change")
