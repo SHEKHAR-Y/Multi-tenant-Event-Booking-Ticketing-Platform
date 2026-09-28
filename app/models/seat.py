@@ -1,8 +1,10 @@
 import enum
+
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
-from sqlalchemy import Enum, ForeignKey, Integer, Numeric, String
+from sqlalchemy import Enum, ForeignKey, Integer, Numeric, String, DateTime, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -24,4 +26,12 @@ class Seat(Base):
     status: Mapped[SeatStatus] = mapped_column(Enum(SeatStatus), default=SeatStatus.AVAILABLE)
 
     event: Mapped["Event"] = relationship(back_populates="seats")
-    
+
+class Booking(Base):
+    __tablename__ = "bookings"
+
+    id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4, nullable=False)
+    seat_id: Mapped[UUID] = mapped_column(ForeignKey("seats.id"), nullable=False)
+    event_id: Mapped[UUID] = mapped_column(ForeignKey("events.id"), nullable=False)
+    user_id: Mapped[UUID] = mapped_column(ForeignKey("users.id"), nullable=False)
+    booked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now()) 

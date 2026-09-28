@@ -27,7 +27,6 @@ class InvalidTokenError(AppError):
     def __init__(self):
         super().__init__("Invalid authentication token")
 
-
 class TokenExpiredError(AppError):
     def __init__(self):
         super().__init__("Authentication token has expired")
@@ -41,5 +40,9 @@ class CustomIntegrityError(AppError):
         super().__init__(message)
 
 class EventNotFound(AppError):
+    def __init__(self, message):
+        super().__init__(message)
+
+class SeatNotAvailable(AppError):
     def __init__(self, message):
         super().__init__(message)
