@@ -8,7 +8,7 @@ from app.services.seat_service import SeatService
 
 router = APIRouter()
 
-@router.post("/v1/book-seats", status_code=status.HTTP_202_ACCEPTED)
+@router.post("/v1/book-seats", status_code=status.HTTP_201_CREATED)
 def book_seats(request: Request, seats: SeatBookingRequest, db: Session = Depends(get_db), current_user=Depends(get_current_user)):
     seatservice = SeatService(db=db)
 

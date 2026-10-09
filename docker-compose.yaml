@@ -5,7 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: event-booking-api
     ports: 
-      - "8000:8000"
+      - "8000"
     environment:
         ENVIRONMENT: development
         DEBUG: False
@@ -63,6 +63,17 @@ services:
       - "5050:80"
     depends_on:
       - db
+
+  nginx:
+    image: nginx:stable-alpine-perl
+    container_name: event-booking-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - app
 
 volumes:
   pgdata:
