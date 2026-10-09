@@ -20,7 +20,7 @@
 html, body {
     margin: 0;
     padding: 0;
-    height: 100%;
+    height: auto;
     background: #0e0e0e;
     color: var(--text);
     font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, Consolas, monospace;
@@ -28,14 +28,18 @@ html, body {
     line-height: 1.7;
 }
 
+/* align-items:flex-start + margin:auto on .window = centered when there is room,
+   top-aligned and fully scrollable when the page is taller than the screen */
 body {
     display: flex;
-    align-items: center;
+    min-height: 100vh;
+    align-items: flex-start;
     justify-content: center;
     padding: 24px;
 }
 
 .window {
+    margin: auto;
     width: 100%;
     max-width: 780px;
     background: var(--bg);
@@ -127,10 +131,13 @@ body {
     border-right: 1px solid var(--border);
 }
 
+/* min-width:0 lets the content area shrink to the window; long words break instead of overflowing */
 .canvas {
     flex: 1;
     padding: 24px 28px;
     overflow-x: auto;
+    min-width: 0;
+    overflow-wrap: anywhere;
 }
 
 .code-block {
@@ -191,6 +198,12 @@ body {
 
 .btn-ghost:hover { border-color: var(--gutter); }
 
+/* ghost <button>s outside .panel-switch would otherwise show the browser's default background */
+button.btn-ghost {
+    background: none;
+    cursor: pointer;
+}
+
 /* Status bar */
 .statusbar {
     display: flex;
@@ -215,6 +228,12 @@ body {
     border: 1px solid var(--border);
     background: none;
     font-family: inherit;
+}
+
+/* the active (primary) button in the switch keeps its fill */
+.panel-switch .btn-primary {
+    background: var(--teal);
+    border-color: var(--teal);
 }
 
 .event-row {
@@ -274,7 +293,7 @@ a.event-row:hover {
     .cursor { animation: none; }
 }
 
-/* ===== Seat map (approved design) ===== */
+/* ===== Seat map ===== */
 :root {
     --green: #4caf50;
     --green-dim: rgba(76, 175, 80, 0.15);
@@ -291,6 +310,7 @@ a.event-row:hover {
     margin-bottom: 24px;
     font-size: 12px;
     color: var(--gutter);
+    flex-wrap: wrap;
 }
 .seat-legend span { display: flex; align-items: center; gap: 6px; }
 
@@ -308,15 +328,20 @@ a.event-row:hover {
 .seat-map {
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: start;
+    width: 100%;
     gap: 10px;
     margin-bottom: 28px;
 }
 
+/* a row = label + a seats container. The row spans the full width and centers its
+   content; the seats container wraps, so a long row never runs past the window. */
 .seat-row {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
+    justify-content: start;
     gap: 8px;
+    width: 100%;
 }
 
 .seat-row-label {
@@ -325,6 +350,18 @@ a.event-row:hover {
     font-size: 12px;
     text-align: right;
     margin-right: 4px;
+    flex-shrink: 0;
+    line-height: 32px;   /* same as seat height, lines up with the first line of seats */
+}
+
+/* REQUIRED by the seats markup: without display:flex here the seat buttons
+   (which are display:flex, i.e. block-level) stack in a vertical line */
+.seat-row-seats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
 }
 
 .seat {
@@ -345,6 +382,7 @@ a.event-row:hover {
     cursor: pointer;
     padding: 0;
     transition: transform 0.08s ease;
+    flex-shrink: 0;
 }
 .seat:hover:not(:disabled) { transform: translateY(-1px); }
 
@@ -401,4 +439,89 @@ a.event-row:hover {
     font-size: 15px;
     color: var(--blue);
     font-weight: 600;
+}
+
+/* ===== Booking button + status ===== */
+/* inline-flex (not flex): a block-level button would ignore the text-align:center
+   on .book-actions and sit on the left */
+.btn-book {
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 4px;
+}
+
+.btn-book:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.book-status {
+    text-align: center;
+    margin-bottom: 16px;
+    font-size: 13px;
+}
+
+.success-line {
+    color: var(--green);
+}
+
+.book-actions {
+    text-align: center;
+    margin-top: 16px;
+}
+
+/* ===== Add seats panel (organizer) ===== */
+.add-seats-panel {
+    margin-bottom: 24px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+}
+
+.row-config {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.row-config input {
+    min-width: 0;
+    padding: 6px 8px;
+    background: #151515;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+}
+
+.row-config input:focus {
+    outline: none;
+    border-color: var(--blue);
+}
+
+.row-config .rc-row { width: 90px; }
+.row-config .rc-count { width: 90px; }
+.row-config .rc-price { width: 110px; }
+
+.rc-remove {
+    padding: 0 10px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--gutter);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.rc-remove:hover {
+    color: #f48771;
+    border-color: #f48771;
+}
+
+#add-seats-preview {
+    margin: 12px 0;
 }

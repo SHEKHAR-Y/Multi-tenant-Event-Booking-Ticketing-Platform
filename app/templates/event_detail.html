@@ -12,6 +12,16 @@
 
 <div class="panel-switch">
     <button id="btn-seats" class="btn btn-primary" onclick="loadSeats()">select_seats()</button>
+    <button id="btn-add-seats" class="btn btn-ghost" onclick="toggleAddSeats()" style="display:none;">add_seats()</button>
+</div>
+
+<div id="panel-add-seats" class="add-seats-panel" style="display:none;">
+    <pre class="code-block"><span class="c">// one line per row — seats are generated as 1..N in each row</span></pre>
+    <div id="add-seats-status" class="book-status" style="display:none;"></div>
+    <div id="row-configs"></div>
+    <div id="add-seats-preview" class="seat-summary-title"></div>
+    <button type="button" class="btn btn-ghost btn-book" onclick="addRowConfig()">+ add_row()</button>
+    <button id="btn-submit-seats" type="button" class="btn btn-primary btn-book" onclick="submitSeats()">create_seats()</button>
 </div>
 
 <div id="seats-status" class="error-line" style="display:none;"></div>
@@ -25,18 +35,29 @@
 
 <div id="seat-map" class="seat-map"></div>
 
+<div id="book-status" class="book-status" style="display:none;"></div>
+
 <div id="seat-summary" class="seat-summary" style="display:none;">
     <div class="seat-summary-title">// selected seats</div>
     <ul id="summary-list" class="seat-summary-list"></ul>
     <div id="summary-total" class="seat-summary-total"></div>
 </div>
 
+<div id="book-actions" class="book-actions" style="display:none;">
+    <button id="btn-book" type="button" class="btn btn-primary btn-book" onclick="bookSeats()" disabled>book_seats()</button>
+</div>
+
 <script>
 const EVENT_ID = "{{ event_id }}";
-const EVENT_DETAIL_URL = '/api/v1/event/' + EVENT_ID;      // confirm this matches your real route once added
+const EVENT_DETAIL_URL = '/api/v1/event/' + EVENT_ID;
 const SEATS_URL = '/api/v1/event-seats/' + EVENT_ID;
+const BOOK_URL = '/api/v1/book-seats';
+const CREATE_SEATS_URL = '/api/v1/event/create-seats';
+const CURRENT_USER_ID = "{{ user.id if user else '' }}";
 
 let seats = [];
+let isOwner = false;
+let seatsExist = null;   // null = not checked yet
 const selectedSeats = new Map();   // seat_id -> seat object
 
 async function loadEventInfo() {
@@ -52,6 +73,10 @@ async function loadEventInfo() {
             return;
         }
         const ev = await res.json();
+        // if the response has no organizer_id we treat the user as owner and let the
+        // backend's ownership check decide
+        isOwner = !ev.organizer_id || String(ev.organizer_id) === CURRENT_USER_ID;
+        updateAddSeatsVisibility();
         info.innerHTML =
             '<span class="kw">const</span> <span class="var">event</span> = {\n' +
             '  <span class="prop">title</span>: <span class="str">"' + ev.title + '"</span>,\n' +
@@ -134,6 +159,8 @@ function renderSummary() {
     const list = document.getElementById('summary-list');
     const totalEl = document.getElementById('summary-total');
 
+    updateBookButton();
+
     if (selectedSeats.size === 0) {
         summary.style.display = 'none';
         return;
@@ -155,6 +182,227 @@ function renderSummary() {
     totalEl.textContent = 'total: ' + total.toFixed(2);
 }
 
+function updateBookButton() {
+    // enabled only when at least one seat is selected
+    document.getElementById('btn-book').disabled = selectedSeats.size === 0;
+}
+
+function showBookStatus(message, ok) {
+    const box = document.getElementById('book-status');
+    box.textContent = '// ' + (ok ? 'success: ' : 'error: ') + message;
+    box.className = 'book-status ' + (ok ? 'success-line' : 'error-line');
+    box.style.display = 'block';
+}
+
+async function bookSeats() {
+    if (selectedSeats.size === 0) {
+        showBookStatus('select at least one seat first', false);
+        return;
+    }
+
+    const bookBtn = document.getElementById('btn-book');
+    const bookedCount = selectedSeats.size;
+    const payload = {
+        event_id: EVENT_ID,
+        id_list: Array.from(selectedSeats.keys()),   // matches SeatBookingRequest.id_list
+    };
+
+    document.getElementById('book-status').style.display = 'none';
+    bookBtn.disabled = true;               // blocks double-click double-submit
+    bookBtn.textContent = 'booking...';
+
+    try {
+        const res = await fetch(BOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify(payload),
+        });
+
+        if (res.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+
+        if (res.status === 201) {
+            showBookStatus('booked ' + bookedCount + ' seat' + (bookedCount > 1 ? 's' : ''), true);
+            await loadSeats();             // refresh so booked seats turn grey
+            return;
+        }
+
+        let message = 'could not book seats';
+        try {
+            const data = await res.json();
+            if (data.error && Array.isArray(data.error) && data.error.length > 0) {
+                message = data.error[0].msg || message;
+            } else if (data.detail) {
+                message = typeof data.detail === 'string' ? data.detail : message;
+            }
+        } catch (_) { /* non-JSON error body, keep default message */ }
+
+        showBookStatus(message, false);
+        if (res.status === 409) await loadSeats();   // someone else took a seat — show fresh statuses
+    } catch (err) {
+        showBookStatus('network error, please try again', false);
+    } finally {
+        bookBtn.textContent = 'book_seats()';
+        updateBookButton();
+    }
+}
+
+// ===== add seats (organizer) =====
+function extractError(data, fallback) {
+    if (data && typeof data.error === 'string') return data.error;                  // {"error": "..."}
+    if (data && Array.isArray(data.error) && data.error.length > 0) {               // validation handler shape
+        return data.error[0].msg || fallback;
+    }
+    if (data && typeof data.detail === 'string') return data.detail;
+    return fallback;
+}
+
+function showAddSeatsStatus(message, ok) {
+    const box = document.getElementById('add-seats-status');
+    box.textContent = '// ' + (ok ? 'success: ' : 'error: ') + message;
+    box.className = 'book-status ' + (ok ? 'success-line' : 'error-line');
+    box.style.display = 'block';
+}
+
+// add_seats() is for the organizer, and only while the event has no seats yet
+function updateAddSeatsVisibility() {
+    const show = isOwner && seatsExist === false;
+    document.getElementById('btn-add-seats').style.display = show ? 'inline-block' : 'none';
+    if (!show) {
+        document.getElementById('panel-add-seats').style.display = 'none';
+    }
+}
+
+// quiet check on page load so the button state is right before anyone clicks select_seats()
+async function checkSeatsExist() {
+    try {
+        const res = await fetch(SEATS_URL, { credentials: 'same-origin' });
+        if (!res.ok) return;   // unknown: the button stays hidden
+        const list = await res.json();
+        seatsExist = Array.isArray(list) && list.length > 0;
+    } catch (_) { /* leave seatsExist as null */ }
+    updateAddSeatsVisibility();
+}
+
+function toggleAddSeats() {
+    const panel = document.getElementById('panel-add-seats');
+    const open = panel.style.display === 'none';
+    panel.style.display = open ? 'block' : 'none';
+    document.getElementById('btn-add-seats').className = open ? 'btn btn-primary' : 'btn btn-ghost';
+}
+
+function updateAddSeatsPreview() {
+    let total = 0;
+    let rows = 0;
+    document.querySelectorAll('#row-configs .row-config').forEach(line => {
+        const count = parseInt(line.querySelector('.rc-count').value, 10);
+        if (Number.isInteger(count) && count > 0) {
+            total += count;
+            rows += 1;
+        }
+    });
+    document.getElementById('add-seats-preview').textContent =
+        '// will create ' + total + ' seat' + (total === 1 ? '' : 's') +
+        ' across ' + rows + ' row' + (rows === 1 ? '' : 's');
+}
+
+function addRowConfig() {
+    const line = document.createElement('div');
+    line.className = 'row-config';
+    line.innerHTML =
+        '<input type="text" class="rc-row" placeholder="row (A)" maxlength="4">' +
+        '<input type="number" class="rc-count" placeholder="seats" min="1" step="1">' +
+        '<input type="number" class="rc-price" placeholder="price" min="0.01" step="0.01">' +
+        '<button type="button" class="rc-remove" title="remove row">x</button>';
+    line.querySelector('.rc-remove').addEventListener('click', () => {
+        line.remove();
+        updateAddSeatsPreview();
+    });
+    line.querySelectorAll('input').forEach(input => input.addEventListener('input', updateAddSeatsPreview));
+    document.getElementById('row-configs').appendChild(line);
+    updateAddSeatsPreview();
+}
+
+// expands the row lines into the flat list the API expects: [{row, seat_number, price}, ...]
+function buildSeatsPayload() {
+    const MAX_SEATS_PER_REQUEST = 2000;   // client-side sanity cap, not a backend rule
+    const lines = document.querySelectorAll('#row-configs .row-config');
+    if (lines.length === 0) return { error: 'add at least one row' };
+
+    const seatsList = [];
+    const seenRows = new Set();
+
+    for (const line of lines) {
+        const row = line.querySelector('.rc-row').value.trim().toUpperCase();
+        const count = parseInt(line.querySelector('.rc-count').value, 10);
+        const price = parseFloat(line.querySelector('.rc-price').value);
+
+        if (!row || row.length > 4) return { error: 'row label must be 1 to 4 characters' };
+        if (seenRows.has(row)) return { error: 'row ' + row + ' is listed twice' };
+        if (!Number.isInteger(count) || count < 1) return { error: 'row ' + row + ': seat count must be at least 1' };
+        if (!(price > 0)) return { error: 'row ' + row + ': enter a price above 0' };
+
+        seenRows.add(row);
+        for (let n = 1; n <= count; n++) {
+            seatsList.push({ row: row, seat_number: n, price: price.toFixed(2) });   // price as a string keeps Decimal exact
+        }
+    }
+
+    if (seatsList.length > MAX_SEATS_PER_REQUEST) {
+        return { error: 'too many seats in one request (max ' + MAX_SEATS_PER_REQUEST + ')' };
+    }
+    return { seats: seatsList };
+}
+
+async function submitSeats() {
+    const built = buildSeatsPayload();
+    if (built.error) {
+        showAddSeatsStatus(built.error, false);
+        return;
+    }
+
+    const btn = document.getElementById('btn-submit-seats');
+    document.getElementById('add-seats-status').style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'creating...';
+
+    try {
+        const res = await fetch(CREATE_SEATS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'same-origin',
+            body: JSON.stringify({ event_id: EVENT_ID, seats: built.seats }),   // matches BulkSeatCreationRequest
+        });
+
+        if (res.status === 401) {
+            window.location.href = '/login';
+            return;
+        }
+
+        if (res.ok) {   // not checking for exactly 201: the route's JSONResponse defaults to 200
+            showBookStatus('created ' + built.seats.length + ' seats', true);
+            document.getElementById('row-configs').innerHTML = '';
+            addRowConfig();
+            await loadSeats();   // shows the new seats, and hides add_seats() since seats now exist
+            return;
+        }
+
+        let message = 'could not create seats';
+        try {
+            message = extractError(await res.json(), message);
+        } catch (_) { /* non-JSON error body, keep default message */ }
+        showAddSeatsStatus(message, false);
+    } catch (err) {
+        showAddSeatsStatus('network error, please try again', false);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'create_seats()';
+    }
+}
+
 async function loadSeats() {
     const statusBox = document.getElementById('seats-status');
     const legend = document.getElementById('seat-legend');
@@ -169,25 +417,33 @@ async function loadSeats() {
         if (!res.ok) {
             statusBox.textContent = '// error: could not load seats (' + res.status + ')';
             statusBox.style.display = 'block';
+            document.getElementById('book-actions').style.display = 'none';
             return;
         }
         seats = await res.json();
+        seatsExist = seats.length > 0;
+        updateAddSeatsVisibility();
         if (!seats.length) {
             statusBox.textContent = '// no seats configured for this event yet';
             statusBox.style.display = 'block';
+            document.getElementById('book-actions').style.display = 'none';
             return;
         }
         legend.style.display = 'flex';
+        document.getElementById('book-actions').style.display = 'block';
         renderSeats();
         renderSummary();
     } catch (err) {
         statusBox.textContent = '// error: network error while loading seats';
         statusBox.style.display = 'block';
+        document.getElementById('book-actions').style.display = 'none';
     } finally {
         btn.disabled = false;
     }
 }
 
+addRowConfig();
 loadEventInfo();
+checkSeatsExist();
 </script>
 {% endblock %}

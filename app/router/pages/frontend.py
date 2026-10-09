@@ -26,10 +26,6 @@ async def refresh_access_token(request: Request):
 
     return templates.TemplateResponse(request=request, name="refresh.html", context={"access_token": access_token, "refresh_token": refresh_token})
 
-# from app.dependencies.auth_cookie import get_optional_current_user  # forces nothing itself,
-# # but /events should require login — reuse your existing forcing dependency:
-# from app.dependencies.auth import get_current_user
-
 @router.get("/events", include_in_schema=False)
 async def events_page(request: Request, user = Depends(get_current_user)):
     return templates.TemplateResponse(request=request, name="events.html", context={"user": user})
