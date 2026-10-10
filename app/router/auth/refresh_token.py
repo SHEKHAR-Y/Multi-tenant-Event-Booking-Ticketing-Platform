@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
 from app.core.database import get_db
 from app.dependencies.rate_limit import rate_limit
 from app.schemas.user import UserRefreshTokenRequest, UserRefreshTokenResponse
