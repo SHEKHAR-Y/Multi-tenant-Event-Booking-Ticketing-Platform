@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db_error_handler import handle_db_error
 from app.core.exceptions import (
@@ -28,19 +28,19 @@ from app.schemas.user import (
 
 
 class UserService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.repo = UserRepository(self.db)
 
-    def check_user_exist_by_email_service(self, email: str) -> User | None:
+    async def check_user_exist_by_email_service(self, email: str) -> User | None:
         """ user the repository exposed functions to access db and verify the user exist or not"""
-        return self.repo.get_user_by_email(email)
+        return await self.repo.get_user_by_email(email)
 
-    def check_user_exist_by_id_service(self, id: uuid.UUID) -> User | None:
+    async def check_user_exist_by_id_service(self, id: uuid.UUID) -> User | None:
         """ use the repository exposed functions to access db and verify the user exist or not via user_id"""
-        return self.repo.get_user_by_id(id)
+        return await self.repo.get_user_by_id(id)
 
-    def store_refresh_token_service(self, token_id: uuid.UUID, token_expiry, user_id: uuid.UUID, family_id: uuid.UUID | None = None) -> bool:
+    async def store_refresh_token_service(self, token_id: uuid.UUID, token_expiry, user_id: uuid.UUID, family_id: uuid.UUID | None = None) -> bool:
         if family_id is None: 
             family_id = uuid.uuid4()
 
@@ -53,15 +53,15 @@ class UserService:
         )
 
         # use repo to access db and create 
-        with handle_db_error(self.db):
-            refreh_token = self.repo.create_refresh_token(refresh_token_object)
-            self.db.commit()
+        async with handle_db_error(self.db):
+            refreh_token = await self.repo.create_refresh_token(refresh_token_object)
+            await self.db.commit()
 
         return True
 
-    def register_user_service(self, user: UserRegisterRequest) -> UserRegisterResponse: 
+    async def register_user_service(self, user: UserRegisterRequest) -> UserRegisterResponse: 
         """ check if the user already exist using the email sent in the request """
-        if self.check_user_exist_by_email_service(user.email) is not None:
+        if await self.check_user_exist_by_email_service(user.email) is not None:
             # raise exception that user already exist
             raise UserAlreadyExists("User already Exist")
 
@@ -75,10 +75,10 @@ class UserService:
             full_name = user.username
         )
 
-        with handle_db_error(self.db):
-            new_user = self.repo.create_user(new_user)
+        async with handle_db_error(self.db):
+            new_user = await self.repo.create_user(new_user)
             # commit after successfull registration 
-            self.db.commit()
+            await self.db.commit()
 
         # return response
         return UserRegisterResponse(
@@ -86,9 +86,9 @@ class UserService:
             username=new_user.full_name
         )
 
-    def login_user_service(self, email: str, password: str) -> UserLoginResponse:
+    async def login_user_service(self, email: str, password: str) -> UserLoginResponse:
         """Authenticate a user and return an access token."""
-        user = self.check_user_exist_by_email_service(email)
+        user = await self.check_user_exist_by_email_service(email)
 
         if user is None:
             raise UserNotFound("User not found, check email and try again")
@@ -107,7 +107,7 @@ class UserService:
         refresh_token, jti, expiry = create_refresh_token(subject)
 
         # store the refresh_token for token revocation or token rotation
-        refresh = self.store_refresh_token_service(token_id=uuid.UUID(jti), token_expiry=expiry, user_id=uuid.UUID(subject))
+        refresh = await self.store_refresh_token_service(token_id=uuid.UUID(jti), token_expiry=expiry, user_id=uuid.UUID(subject))
 
         if not refresh:
             raise UserNotAuthorized("error while token rotation mechanism")
@@ -117,7 +117,7 @@ class UserService:
             refresh_token=refresh_token
         )
 
-    def refresh_access_token_service(self, refresh_token: str) -> UserRefreshTokenResponse:
+    async def refresh_access_token_service(self, refresh_token: str) -> UserRefreshTokenResponse:
         # check if the refresh token is provided
         if not refresh_token :
             raise InvalidCredentialError("Refresh token is required")
@@ -132,13 +132,13 @@ class UserService:
         jti = uuid.UUID(payload["jti"])
 
         # check the user exist in the db using the user_id
-        check_user = self.check_user_exist_by_id_service(user_id)
+        check_user = await self.check_user_exist_by_id_service(user_id)
 
         if check_user is None:
             raise UserNotFound("User not found")
         
         # fetch the current refresh token details from the db 
-        old_refresh_token_object = self.fetch_refresh_token_from_db_service(jti=jti)
+        old_refresh_token_object = await self.fetch_refresh_token_from_db_service(jti=jti)
 
         if not old_refresh_token_object: 
                     raise InvalidCredentialError("invalid refresh token")
@@ -174,30 +174,30 @@ class UserService:
             refresh_token=new_refresh_token
         )
 
-    def fetch_refresh_token_from_db_service(self, jti: uuid.UUID) -> RefreshToken:
+    async def fetch_refresh_token_from_db_service(self, jti: uuid.UUID) -> RefreshToken:
         # use repo to access db and get 
-        with handle_db_error(self.db):
-            token = self.repo.fetch_refresh_token(jti=jti)
-            self.db.commit()
+        async with handle_db_error(self.db):
+            token = await self.repo.fetch_refresh_token(jti=jti)
+            await self.db.commit()
             return token
 
-    def mark_current_refresh_token_used_service(self, jti: uuid.UUID) -> RefreshToken:
+    async def mark_current_refresh_token_used_service(self, jti: uuid.UUID) -> RefreshToken:
         # use repo to access db and marks token used
-        with handle_db_error(self.db):
-            self.repo.mark_refresh_token_used(jti=jti)
-            self.db.commit()
+        async with handle_db_error(self.db):
+            await self.repo.mark_refresh_token_used(jti=jti)
+            await self.db.commit()
 
-    def revoke_refresh_token(self, family_id: uuid.UUID):
+    async def revoke_refresh_token(self, family_id: uuid.UUID):
         # use repo and revoke all the tokens with the family id 
-        with handle_db_error(self.db):
-            self.repo.revoke_refresh_tokens_with_same_family(family_id=family_id) 
-            self.db.commit()
+        async with handle_db_error(self.db):
+            await self.repo.revoke_refresh_tokens_with_same_family(family_id=family_id) 
+            await self.db.commit()
 
-    def change_user_role_customer_to_organizer(self, user: User) -> User | None:
-        with handle_db_error(self.db):
-            self.repo.change_role_from_customer_to_organizer(user_id=user.id)
-            self.db.commit()
-            self.db.refresh(user)
+    async def change_user_role_customer_to_organizer(self, user: User) -> User | None:
+        async with handle_db_error(self.db):
+            await self.repo.change_role_from_customer_to_organizer(user_id=user.id)
+            await self.db.commit()
+            await self.db.refresh(user)
             return user
 
         return None

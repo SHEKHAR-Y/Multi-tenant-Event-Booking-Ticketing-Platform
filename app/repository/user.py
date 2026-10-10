@@ -11,50 +11,50 @@ class UserRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def get_user_by_email(self, email: str) -> User | None:
+    async def get_user_by_email(self, email: str) -> User | None:
         statement = select(User).where(User.email == email)
 
-        return self.db.scalar(statement)
+        return await self.db.scalar(statement)
 
-    def get_user_by_id(self, id: uuid.UUID) -> User | None :
+    async def get_user_by_id(self, id: uuid.UUID) -> User | None :
         statement = select(User).where(User.id == id)
 
-        return self.db.scalar(statement)
+        return await self.db.scalar(statement)
 
-    def create_user(self, new_user: User) -> User:
+    async def create_user(self, new_user: User) -> User:
         self.db.add(new_user)
-        self.db.flush()
-        self.db.refresh(new_user)
+        await self.db.flush()
+        await self.db.refresh(new_user)
 
         return new_user
 
-    def create_refresh_token(self, refresh_token: RefreshToken) -> RefreshToken:
+    async def create_refresh_token(self, refresh_token: RefreshToken) -> RefreshToken:
         self.db.add(refresh_token)
-        self.db.flush()
-        self.db.refresh(refresh_token)
+        await self.db.flush()
+        await self.db.refresh(refresh_token)
 
         return refresh_token
 
-    def fetch_refresh_token(self, jti: uuid.UUID) -> RefreshToken:
+    async def fetch_refresh_token(self, jti: uuid.UUID) -> RefreshToken:
         statement = select(RefreshToken).where(RefreshToken.jti == jti)
 
-        return self.db.scalar(statement)
+        return await self.db.scalar(statement)
 
-    def mark_refresh_token_used(self, jti: uuid.UUID) -> RefreshToken:
-        refresh_token = self.fetch_refresh_token(jti=jti)
+    async def mark_refresh_token_used(self, jti: uuid.UUID) -> RefreshToken:
+        refresh_token = await self.fetch_refresh_token(jti=jti)
 
         refresh_token.is_used = True
-        self.db.flush()
-        self.db.refresh(refresh_token)
+        await self.db.flush()
+        await self.db.refresh(refresh_token)
 
         return refresh_token
 
-    def revoke_refresh_tokens_with_same_family(self, family_id: uuid.UUID):
+    async def revoke_refresh_tokens_with_same_family(self, family_id: uuid.UUID):
         statement = (update(RefreshToken).where(RefreshToken.family_id == family_id).values(is_revoked=True))
-        self.db.execute(statement)
-        self.db.flush()
+        await self.db.execute(statement)
+        await self.db.flush()
 
-    def change_role_from_customer_to_organizer(self, user_id: uuid.UUID):
+    async def change_role_from_customer_to_organizer(self, user_id: uuid.UUID):
         statement = (update(User).where(User.id == user_id).values(role=UserRole.ORGANIZER))
-        self.db.execute(statement=statement)
-        self.db.flush()
+        await self.db.execute(statement=statement)
+        await self.db.flush()
