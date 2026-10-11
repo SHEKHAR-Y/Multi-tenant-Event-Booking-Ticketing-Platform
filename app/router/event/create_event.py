@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Request, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.dependencies.auth import get_current_user
@@ -10,12 +10,12 @@ from app.services.event import EventService
 router = APIRouter()
 
 @router.post("/v1/event/create", response_model=EventCreateResponse, status_code=status.HTTP_201_CREATED)
-def create_event(request: Request, event_request: EventCreateRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def create_event(request: Request, event_request: EventCreateRequest, current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_db)):
 
     # check if the user exist -> ensure token is valid if yess then just fetch user from token and fetch user role -> if role is organizer
     # then allow the user to create the event else raise error of forbidden 
     event_service = EventService(db)
-    res =  event_service.create_event_service(event_request, current_user)
+    res =  await event_service.create_event_service(event_request, current_user)
 
     return EventCreateResponse(
         event_id=res.id,

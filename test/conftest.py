@@ -1,43 +1,52 @@
-import pytest
+from collections.abc import AsyncGenerator
+
+import pytest_asyncio
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 
 from app.core.database import Base, get_db
 from app.main import app
 
-TEST_DB_URL = "sqlite:///:memory:"
-engine = create_engine(
+TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
+engine = create_async_engine(
     TEST_DB_URL,
     connect_args={"check_same_thread": False},
     poolclass=StaticPool
 )
 
-testing_local_session = sessionmaker(
+testing_local_session = async_sessionmaker(
     autocommit=False,
     autoflush=False,
-    bind=engine
+    bind=engine, 
+    expire_on_commit=False
 )
 
-def override_get_db():
-    with testing_local_session() as session:
+async def override_get_db() -> AsyncGenerator[AsyncSession, None]:
+    async with testing_local_session() as session:
         yield session
 
 
 app.dependency_overrides[get_db] = override_get_db
 
-@pytest.fixture(autouse=True)
-def setup_db():
-    Base.metadata.create_all(bind=engine)
+@pytest_asyncio.fixture(autouse=True)
+async def setup_db():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
     yield
-    Base.metadata.drop_all(bind=engine)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
 
-@pytest.fixture
-def test_client():
-    return TestClient(app)
+@pytest_asyncio.fixture
+async def test_client():
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        yield client
 
-@pytest.fixture
-def db_session():
-    with testing_local_session() as session:
+@pytest_asyncio.fixture
+async def db_session():
+    async with testing_local_session() as session:
         yield session

@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db_error_handler import handle_db_error
 from app.core.exceptions import EventNotFound, UserNotAuthorized
@@ -13,11 +13,11 @@ from app.schemas.seat import BulkSeatCreationRequest
 
 
 class EventService:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
         self.repo = EventRepository(self.db)
 
-    def create_event_service(self, event: EventCreateRequest, current_user: User) -> Event:
+    async def create_event_service(self, event: EventCreateRequest, current_user: User) -> Event:
 
         # check if the user role is organizer
         if current_user.role is not UserRole.ORGANIZER : 
@@ -34,14 +34,14 @@ class EventService:
             end_time = event.end_time 
         )
 
-        with handle_db_error(self.db): 
-            self.repo.create_event(new_event)
-            self.db.commit()
-            self.db.refresh(new_event)
+        async with handle_db_error(self.db): 
+            await self.repo.create_event(new_event)
+            await self.db.commit()
+            await self.db.refresh(new_event)
 
         return new_event
 
-    def create_event_seats_in_bulk(self, current_user: User, seat_details: BulkSeatCreationRequest) -> bool:
+    async def create_event_seats_in_bulk(self, current_user: User, seat_details: BulkSeatCreationRequest) -> bool:
 
         current_user_id = current_user.id
         event_id = seat_details.event_id
@@ -52,8 +52,8 @@ class EventService:
             raise UserNotAuthorized("User not authorized to perform this task")
 
         # check if the event exist
-        with handle_db_error(self.db):
-            event = self.repo.get_event_by_id(event_id)
+        async with handle_db_error(self.db):
+            event = await self.repo.get_event_by_id(event_id)
             if event is None:
                 raise EventNotFound("no event exist")
 
@@ -62,28 +62,28 @@ class EventService:
             raise UserNotAuthorized("you're not authorized to perform this task")
 
         # insert the seats in db
-        with handle_db_error(self.db):
-            self.repo.creat_seats_for_event(event_id, seat_list)
-            self.db.commit()
+        async with handle_db_error(self.db):
+            await self.repo.create_seats_for_event(event_id, seat_list)
+            await self.db.commit()
 
         return True
 
-    def get_event(self, event_id: str) -> Event | None: 
+    async def get_event(self, event_id: str) -> Event | None: 
         id: UUID = UUID(event_id)
-        result = self.repo.get_event_with_id(id)
+        result = await self.repo.get_event_with_id(id)
 
         return result
 
-    def get_all_events(self) -> list[Event] | None:
-        result = self.repo.get_all_events()
+    async def get_all_events(self) -> list[Event] | None:
+        result = await self.repo.get_all_events()
 
         return result
 
-    def get_all_event_seats(self, event_id: str) -> list[Seat] | None:
+    async def get_all_event_seats(self, event_id: str) -> list[Seat] | None:
         id: UUID = UUID(event_id)
 
-        with handle_db_error(db=self.db):
-            result = self.repo.get_event_seats(id)
+        async with handle_db_error(db=self.db):
+            result = await self.repo.get_event_seats(id)
             return result
 
         return None

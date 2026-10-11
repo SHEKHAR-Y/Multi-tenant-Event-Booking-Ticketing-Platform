@@ -1,7 +1,7 @@
 import uuid
 
 from fastapi import Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db
 from app.core.exceptions import UserNotFound
@@ -10,7 +10,7 @@ from app.models.user import User
 from app.repository.user import UserRepository
 
 
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
+async def get_current_user(token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_db)) -> User:
     # decode the token and get the payload
     payload = decode_access_token(token)
 
@@ -19,7 +19,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
     # now check if the user exist in the database with the id (user user repository)
     user_repo = UserRepository(db)
-    user = user_repo.get_user_by_id(user_id)
+    user = await user_repo.get_user_by_id(user_id)
 
     # exception handling if the user is not found
     if not user:

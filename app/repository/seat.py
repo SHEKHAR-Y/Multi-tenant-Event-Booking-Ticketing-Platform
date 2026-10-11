@@ -1,19 +1,22 @@
 from uuid import UUID
 
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.seat import Booking, Seat, SeatStatus
 
 
 class SeatRepository:
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         self.db = db
 
-    def check_seats_available(self, ids: list[UUID]) -> bool:
+    async def check_seats_available(self, ids: list[UUID]) -> bool:
         number_of_seats = len(ids)
         statement = select(Seat).where(Seat.id.in_(ids)).with_for_update()
-        seats = self.db.scalars(statement).all()
+        result = await self.db.scalars(statement)
+
+        seats = result.all()
+        
 
         if number_of_seats != len(seats):
             return False
@@ -21,13 +24,13 @@ class SeatRepository:
         for i in ids:
             statement = select(Seat).where(Seat.id == i)
 
-            seat = self.db.scalar(statement=statement)
+            seat = await self.db.scalar(statement=statement)
             if seat.status != "available":
                 return False
 
         return True
 
-    def book_seats(self, ids: list[UUID], user_id: UUID, event_id: UUID):
+    async def book_seats(self, ids: list[UUID], user_id: UUID, event_id: UUID):
         for i in ids:
             booking = Booking(
                 seat_id = i, 
@@ -38,8 +41,8 @@ class SeatRepository:
             self.db.add(booking)
             # update the status of the seat to booked
             statement = select(Seat).where(Seat.id == i)
-            currentseat = self.db.scalar(statement)
+            currentseat = await self.db.scalar(statement)
 
             currentseat.status = SeatStatus.BOOKED
 
-        self.db.flush()
+        await self.db.flush()
