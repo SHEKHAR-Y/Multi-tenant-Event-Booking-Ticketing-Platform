@@ -1,5 +1,7 @@
-
 from datetime import datetime
+
+import pytest
+from sqlalchemy import select
 
 from app.models.user import User, UserRole
 
@@ -10,23 +12,25 @@ def normalize(dt_string):
     dt = datetime.fromisoformat(dt_string.replace("Z", "+00:00"))
     return dt.replace(tzinfo=None)
 
-def test_create_event_unauthenticated(test_client):
-    response = test_client.post(
+@pytest.mark.asyncio
+async def test_create_event_unauthenticated(test_client):
+    response = await test_client.post(
         "/api/v1/event/create"
         )
     assert response.status_code == 403
 
-def test_create_event_unauthorized(test_client):
+@pytest.mark.asyncio
+async def test_create_event_unauthorized(test_client):
     # register a user normally default role = customer 
     payload = {
             "email": "test@test.com",
             "username": "test_username",
             "password": "anyvalidpassword",
         }
-    test_client.post("/api/v1/register", json=payload)
+    await test_client.post("/api/v1/register", json=payload)
 
     # login normally 
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "test@test.com",
@@ -45,7 +49,7 @@ def test_create_event_unauthorized(test_client):
         "end_time": "2026-08-30T17:04:59.198Z"
     }
 
-    response = test_client.post(
+    response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -54,21 +58,28 @@ def test_create_event_unauthorized(test_client):
         )
     assert response.status_code == 403 # becuase a user with customer role can't create event only user with role = organizer can create an event        
 
-def test_create_event_authorized_success(test_client, db_session):
+@pytest.mark.asyncio
+async def test_create_event_authorized_success(test_client, db_session):
     # register normal user 
-    test_client.post("/api/v1/register", json={
+    await test_client.post("/api/v1/register", json={
         "email": "organizer@test.com",
         "username": "organizer_user",
         "password": "anyvalidpassword",
     })
+    await db_session.flush()
 
-    # use db_session fixture to fetch user, change role 
-    user = db_session.query(User).filter(User.email == "organizer@test.com").first()
-    user.role = UserRole.ORGANIZER
-    db_session.commit()
+    # 2. Fetch the actual SQLAlchemy User object
+    test_user = await db_session.scalar(
+        select(User).where(User.email == "organizer@test.com")
+    )
+    assert test_user is not None
+
+    # 3. Promote the user to organizer
+    test_user.role = UserRole.ORGANIZER
+    await db_session.commit()
 
     # login with this user and extract the token
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "organizer@test.com",
@@ -88,7 +99,7 @@ def test_create_event_authorized_success(test_client, db_session):
         "end_time": "2026-08-30T17:04:59.198Z"
     }
 
-    create_event_response = test_client.post(
+    create_event_response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -105,21 +116,27 @@ def test_create_event_authorized_success(test_client, db_session):
     assert normalize(data["start_time"]) == normalize(payload["start_time"])
     assert normalize(data["end_time"]) == normalize(payload["end_time"])
 
-def test_create_event_end_time_before_start_time(test_client, db_session):
+@pytest.mark.asyncio
+async def test_create_event_end_time_before_start_time(test_client, db_session):
     # register normal user 
-    test_client.post("/api/v1/register", json={
+    await test_client.post("/api/v1/register", json={
         "email": "organizer@test.com",
         "username": "organizer_user",
         "password": "anyvalidpassword",
     })
 
-    # use db_session fixture to fetch user, change role 
-    user = db_session.query(User).filter(User.email == "organizer@test.com").first()
-    user.role = UserRole.ORGANIZER
-    db_session.commit()
+    # 2. Fetch the actual SQLAlchemy User object
+    test_user = await db_session.scalar(
+        select(User).where(User.email == "organizer@test.com")
+    )
+    assert test_user is not None
+
+    # 3. Promote the user to organizer
+    test_user.role = UserRole.ORGANIZER
+    await db_session.commit()
 
     # login with this user and extract the token
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "organizer@test.com",
@@ -139,7 +156,7 @@ def test_create_event_end_time_before_start_time(test_client, db_session):
         "end_time": "2026-08-30T17:04:58.198Z"
     }
 
-    create_event_response = test_client.post(
+    create_event_response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -149,17 +166,18 @@ def test_create_event_end_time_before_start_time(test_client, db_session):
 
     assert create_event_response.status_code == 422
 
-def test_create_event_title_too_short(test_client):
+@pytest.mark.asyncio
+async def test_create_event_title_too_short(test_client):
     # register a user normally 
     payload = {
             "email": "test@test.com",
             "username": "test_username",
             "password": "anyvalidpassword",
         }
-    test_client.post("/api/v1/register", json=payload)
+    await test_client.post("/api/v1/register", json=payload)
 
     # login normally 
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "test@test.com",
@@ -178,7 +196,7 @@ def test_create_event_title_too_short(test_client):
         "end_time": "2026-08-30T17:04:58.198Z"
     }
 
-    response = test_client.post(
+    response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -187,17 +205,18 @@ def test_create_event_title_too_short(test_client):
         )
     assert response.status_code == 422
 
-def test_create_event_title_too_long(test_client):
+@pytest.mark.asyncio
+async def test_create_event_title_too_long(test_client):
     # register a user normally 
     payload = {
             "email": "test@test.com",
             "username": "test_username",
             "password": "anyvalidpassword",
         }
-    test_client.post("/api/v1/register", json=payload)
+    await test_client.post("/api/v1/register", json=payload)
 
     # login normally 
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "test@test.com",
@@ -215,7 +234,7 @@ def test_create_event_title_too_long(test_client):
         "end_time": "2026-08-30T17:04:58.198Z"
     }
 
-    response = test_client.post(
+    response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -224,17 +243,18 @@ def test_create_event_title_too_long(test_client):
         )
     assert response.status_code == 422
 
-def test_create_event_description_too_short(test_client):
+@pytest.mark.asyncio
+async def test_create_event_description_too_short(test_client):
     # register a user normally 
     payload = {
             "email": "test@test.com",
             "username": "test_username",
             "password": "anyvalidpassword",
         }
-    test_client.post("/api/v1/register", json=payload)
+    await test_client.post("/api/v1/register", json=payload)
 
     # login normally 
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "test@test.com",
@@ -253,7 +273,7 @@ def test_create_event_description_too_short(test_client):
         "end_time": "2026-08-30T17:04:58.198Z"
     }
 
-    response = test_client.post(
+    response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -262,17 +282,18 @@ def test_create_event_description_too_short(test_client):
         )
     assert response.status_code == 422
 
-def test_create_event_description_too_long(test_client):
+@pytest.mark.asyncio
+async def test_create_event_description_too_long(test_client):
     # register a user normally 
     payload = {
             "email": "test@test.com",
             "username": "test_username",
             "password": "anyvalidpassword",
         }
-    test_client.post("/api/v1/register", json=payload)
+    await test_client.post("/api/v1/register", json=payload)
 
     # login normally 
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "test@test.com",
@@ -290,7 +311,7 @@ def test_create_event_description_too_long(test_client):
         "end_time": "2026-08-30T17:04:58.198Z"
     }
 
-    response = test_client.post(
+    response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -299,17 +320,18 @@ def test_create_event_description_too_long(test_client):
         )
     assert response.status_code == 422
 
-def test_create_event_venue_name_too_short(test_client):
+@pytest.mark.asyncio
+async def test_create_event_venue_name_too_short(test_client):
     # register a user normally 
     payload = {
             "email": "test@test.com",
             "username": "test_username",
             "password": "anyvalidpassword",
         }
-    test_client.post("/api/v1/register", json=payload)
+    await test_client.post("/api/v1/register", json=payload)
 
     # login normally 
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "test@test.com",
@@ -328,7 +350,7 @@ def test_create_event_venue_name_too_short(test_client):
         "end_time": "2026-08-30T17:04:58.198Z"
     }
 
-    response = test_client.post(
+    response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -337,17 +359,18 @@ def test_create_event_venue_name_too_short(test_client):
         )
     assert response.status_code == 422
 
-def test_create_event_venue_name_too_long(test_client):
+@pytest.mark.asyncio
+async def test_create_event_venue_name_too_long(test_client):
     # register a user normally 
     payload = {
             "email": "test@test.com",
             "username": "test_username",
             "password": "anyvalidpassword",
         }
-    test_client.post("/api/v1/register", json=payload)
+    await test_client.post("/api/v1/register", json=payload)
 
     # login normally 
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "test@test.com",
@@ -365,7 +388,7 @@ def test_create_event_venue_name_too_long(test_client):
         "end_time": "2026-08-30T17:04:58.198Z"
     }
 
-    response = test_client.post(
+    response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -374,17 +397,18 @@ def test_create_event_venue_name_too_long(test_client):
         )
     assert response.status_code == 422
 
-def test_create_event_venue_address_too_short(test_client):
+@pytest.mark.asyncio
+async def test_create_event_venue_address_too_short(test_client):
     # register a user normally 
     payload = {
             "email": "test@test.com",
             "username": "test_username",
             "password": "anyvalidpassword",
         }
-    test_client.post("/api/v1/register", json=payload)
+    await test_client.post("/api/v1/register", json=payload)
 
     # login normally 
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "test@test.com",
@@ -403,7 +427,7 @@ def test_create_event_venue_address_too_short(test_client):
         "end_time": "2026-08-30T17:04:58.198Z"
     }
 
-    response = test_client.post(
+    response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
@@ -412,17 +436,18 @@ def test_create_event_venue_address_too_short(test_client):
         )
     assert response.status_code == 422
 
-def test_create_event_venue_address_too_long(test_client):
+@pytest.mark.asyncio
+async def test_create_event_venue_address_too_long(test_client):
     # register a user normally 
     payload = {
             "email": "test@test.com",
             "username": "test_username",
             "password": "anyvalidpassword",
         }
-    test_client.post("/api/v1/register", json=payload)
+    await test_client.post("/api/v1/register", json=payload)
 
     # login normally 
-    login_response = test_client.post(
+    login_response = await test_client.post(
         "/api/v1/login",
         data={
             "username": "test@test.com",
@@ -440,7 +465,7 @@ def test_create_event_venue_address_too_long(test_client):
         "start_time": "2026-08-30T17:04:58.198Z",
     }
 
-    response = test_client.post(
+    response = await test_client.post(
         "/api/v1/event/create", 
         json=payload,
         headers={
