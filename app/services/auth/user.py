@@ -141,7 +141,7 @@ class UserService:
         old_refresh_token_object = await self.fetch_refresh_token_from_db_service(jti=jti)
 
         if not old_refresh_token_object: 
-                    raise InvalidCredentialError("invalid refresh token")
+            raise InvalidCredentialError("invalid refresh token")
 
         # extract family id
         family_id = old_refresh_token_object.family_id
@@ -156,7 +156,7 @@ class UserService:
             raise InvalidCredentialError("threat detected")
 
         # mark the current refresh token used
-        self.mark_current_refresh_token_used_service(jti=jti)
+        await self.mark_current_refresh_token_used_service(jti=jti)
 
         # create new access token and refresh token
         subject = str(check_user.id)
@@ -164,7 +164,7 @@ class UserService:
         new_refresh_token, jti, new_expiry = create_refresh_token(subject=subject)
 
         # create a new refresh token object to be stored in db with the same family id
-        new_refresh_token_object = self.store_refresh_token_service(token_id=uuid.UUID(jti), token_expiry=new_expiry, user_id=user_id, family_id=family_id)
+        new_refresh_token_object = await self.store_refresh_token_service(token_id=uuid.UUID(jti), token_expiry=new_expiry, user_id=user_id, family_id=family_id)
 
         if new_refresh_token_object == False: 
             raise InvalidCredentialError("token cretion failed")
