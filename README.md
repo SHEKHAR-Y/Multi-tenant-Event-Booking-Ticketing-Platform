@@ -233,6 +233,86 @@ Core entities include:
 - `booking_seats`
 - `payments` *(in progress)*
 
+
+# Event, Seat & Booking Workflows
+
+The API follows the project's layered architecture:
+
+```text
+Client → Router → Service → Repository → PostgreSQL
+```
+
+The router handles request validation and HTTP authentication/authorization dependencies. The service layer enforces business rules and coordinates operations. The repository layer handles database access.
+
+## 1. Event Creation
+
+**Access:** Authenticated users with the `organizer` role.
+
+```mermaid
+flowchart TD
+    A[Client submits event JSON payload] --> B{Pydantic request validation}
+    B -- Invalid payload --> E422[HTTP 422 Unprocessable Entity]
+    B -- Valid payload --> C{Authenticated?}
+    C -- No --> E401[HTTP 401 Unauthorized]
+    C -- Yes --> D{Role is organizer?}
+    D -- No --> E403[HTTP 403 Forbidden]
+    D -- Yes --> R[Event repository creates event]
+    R --> S[Return created event]
+```
+
+The organizer identity should be derived from the authenticated user context, not trusted from a client-supplied `organizer_id`.
+
+## 2. Bulk Seat Creation
+
+**Access:** Authenticated users with the `organizer` role. The organizer must be authorized to create seats for the target event.
+
+```mermaid
+flowchart TD
+    A[Client submits bulk seat creation payload] --> B{Pydantic request validation}
+    B -- Invalid payload --> E422[HTTP 422 Unprocessable Entity]
+    B -- Valid payload --> C{Authenticated?}
+    C -- No --> E401[HTTP 401 Unauthorized]
+    C -- Yes --> D[Seat creation service]
+    D --> E{Organizer role / permission valid?}
+    E -- No --> E403[HTTP 403 Forbidden]
+    E -- Yes --> F{Event exists?}
+    F -- No --> E404[HTTP 404 Event Not Found]
+    F -- Yes --> G[Seat repository persists seats]
+    G --> H{Database operation successful?}
+    H -- No --> X[Raise or map persistence error]
+    H -- Yes --> I[Return success]
+```
+
+The service layer receives the authenticated `user_id` and target `event_id`, checks the relevant authorization and event-existence rules, and then calls the repository to persist the seats.
+
+## 3. Seat Booking
+
+**Access:** Any authenticated user role, subject to the booking rules.
+
+```mermaid
+flowchart TD
+    A[Client submits seat booking payload] --> B{Pydantic request validation}
+    B -- Invalid payload --> E422[HTTP 422 Unprocessable Entity]
+    B -- Valid payload --> C{Authenticated?}
+    C -- No --> E401[HTTP 401 Unauthorized]
+    C -- Yes --> D[Booking service]
+    D --> E{Event exists?}
+    E -- No --> E404[HTTP 404 Event Not Found]
+    E -- Yes --> F{Seat exists and belongs to event?}
+    F -- No --> ESeat[Seat Not Found]
+    F -- Yes --> G[Begin database transaction]
+    G --> H[Lock relevant seat rows and check availability]
+    H --> I{All requested seats available?}
+    I -- No --> E409[HTTP 409 Conflict: seat unavailable]
+    I -- Yes --> J[Create booking and associate seats]
+    J --> K{Booking succeeds?}
+    K -- No --> ERollback[Rollback transaction and return mapped error]
+    K -- Yes --> L[Commit transaction]
+    L --> M[Return success]
+```
+
+**Concurrency requirement:** The availability check, row-level locking, and booking writes must be coordinated in the same transaction. This prevents two concurrent requests from both treating the same seat as available. The transaction should be rolled back if booking fails. The exact conflict response depends on how the application's domain exceptions are mapped to HTTP responses.
+
 ### Key database design decisions
 
 - Foreign keys used for filtering and joins are explicitly indexed.
@@ -628,12 +708,12 @@ alembic upgrade head
 - [x] GitHub Actions CI
 - [x] Redis service in CI for Redis-dependent tests
 - [x] Protected `main` branch with pull-request workflow
+- [x] Seat management
+- [x] Booking workflow
+- [x] Concurrency-safe seat reservation
 
 ### In Progress
 
-- [ ] Seat management
-- [ ] Booking workflow
-- [ ] Concurrency-safe seat reservation
 - [ ] Payment integration
 - [ ] Multi-tenant organization-level isolation
 - [ ] Celery-based asynchronous processing
@@ -645,9 +725,6 @@ alembic upgrade head
 
 # Roadmap
 
-- [ ] Implement seat inventory management
-- [ ] Implement concurrency-safe seat locking
-- [ ] Implement complete booking workflow
 - [ ] Add payment integration using a sandbox/mock provider
 - [ ] Redis-backed caching for event listings
 - [ ] Celery for asynchronous notification/email processing
