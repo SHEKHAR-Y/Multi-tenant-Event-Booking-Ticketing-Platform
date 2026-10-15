@@ -23,5 +23,3 @@ async def create_bulk_seats_for_event(request: Request, seat: BulkSeatCreationRe
     return JSONResponse(
         content={"status": "success"}
     ) 
-
-# , response_model=list[SeatCreationResponse]

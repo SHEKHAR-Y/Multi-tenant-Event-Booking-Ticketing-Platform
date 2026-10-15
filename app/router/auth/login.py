@@ -9,7 +9,7 @@ from app.services.auth.user import UserService
 
 router = APIRouter()
 
-@router.post("/v1/login", response_model= UserLoginResponse, status_code=status.HTTP_200_OK, dependencies=[Depends(rate_limit(requests=500, window_seconds=180))])
+@router.post("/v1/login", response_model= UserLoginResponse, status_code=status.HTTP_200_OK, dependencies=[Depends(rate_limit(requests=50000, window_seconds=180))])
 async def login(request: Request, response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     # call the service to check the passowrd is correct and check if the user exist 
     tokens = await UserService(db=db).login_user_service(form_data.username, form_data.password)

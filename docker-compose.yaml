@@ -1,11 +1,36 @@
 services:
+  # fastapi server instance 1
   app: 
     build: 
       context: .
       dockerfile: Dockerfile
     container_name: event-booking-api
-    ports: 
-      - "8000"
+    environment:
+        ENVIRONMENT: development
+        DEBUG: False
+        DATABASE_URL: ${DATABASE_URL}
+
+        ACCESS_TOKEN_EXPIRE_MINUTES: ${access_token_expire_minutes}
+        REFRESH_TOKEN_EXPIRE_DAYS: ${refresh_token_expire_days}
+  
+        SECRET_KEY: ${secret_key}
+        ALGO: ${algo}
+  
+        RESEND_API_KEY: ${resend_api_key}
+  
+        REDIS_URL: redis://redis:6379
+    depends_on: 
+      db:
+        condition: service_healthy
+      redis: 
+        condition: service_healthy
+  
+  # fastapi server instance 2
+  app1: 
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: event-booking-api-1
     environment:
         ENVIRONMENT: development
         DEBUG: False
@@ -74,6 +99,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf
     depends_on:
       - app
+      - app1
 
 volumes:
   pgdata:

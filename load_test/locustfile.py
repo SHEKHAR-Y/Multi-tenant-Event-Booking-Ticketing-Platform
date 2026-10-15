@@ -10,8 +10,8 @@ from locust.exception import StopUser
 # Replace these with your real booking endpoint and request fields.
 BOOKING_ENDPOINT = "/api/v1/book-seats"
 
-EVENT_ID = "a5436a99-83e8-43b5-ab78-e983d2b19d5c"
-SEAT_ID_LIST = ["55f4f616-50e5-4e44-934a-fba2579f976e"]
+EVENT_ID = "80f06d32-c31c-4b6a-be2f-2516b36ab34e"
+SEAT_ID_LIST = ["03c6a942-3473-4f40-92b8-015c51e7442c"]
 
 USERS_FILE = Path(__file__).with_name("locust_users.csv")
 

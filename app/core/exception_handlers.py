@@ -7,6 +7,7 @@ from app.core.exceptions import (
     EventNotFound,
     InvalidCredentialError,
     InvalidTokenError,
+    SeatNotAvailable,
     TokenExpiredError,
     UserAlreadyExists,
     UserNotAuthorized,
@@ -70,8 +71,8 @@ async def event_not_found_handler(request: Request, exc: EventNotFound):
         content={"error": exc.message}
     )
 
-async def seat_not_available(request: Request, exc: EventNotFound):
+async def seat_not_available(request: Request, exc: SeatNotAvailable):
     return JSONResponse(
-        status_code=status.HTTP_404_NOT_FOUND,
+        status_code=status.HTTP_409_CONFLICT,
         content={"error": exc.message}
     )

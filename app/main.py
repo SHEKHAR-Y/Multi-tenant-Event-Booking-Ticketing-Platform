@@ -1,4 +1,4 @@
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, status
 from fastapi.exceptions import RequestValidationError
 
 # jinja 2 template 
@@ -95,6 +95,6 @@ app.include_router(book_seats, prefix="/api", tags=["Event"])
 
 app.include_router(frontend_router)
 
-@app.get("/health", dependencies=[Depends(rate_limit(requests=5, window_seconds=60))])
+@app.get("/health", status_code=status.HTTP_200_OK, dependencies=[Depends(rate_limit(requests=5000000000000, window_seconds=60))])
 def health_check():
     return {"message": "API is healthy and running!"}
