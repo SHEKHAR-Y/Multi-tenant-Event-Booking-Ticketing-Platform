@@ -1,58 +1,78 @@
 {% extends "base.html" %}
 
-{% block filename %}events.html{% endblock %}
+{% block title %}Events – Marquee{% endblock %}
 {% block tab_events %}tab-active{% endblock %}
 
 {% block content %}
-<pre class="code-block"><span class="c">// events.controller</span>
-<span class="c">// browse upcoming events, or create your own</span>
-</pre>
+<div class="page-head">
+    <h1>Events</h1>
+    <p>Browse upcoming events, or create your own.</p>
+</div>
 
 <div class="panel-switch">
-    <button id="btn-list" class="btn btn-primary" onclick="showPanel('list')">list_events()</button>
-    <button id="btn-create" class="btn btn-ghost" onclick="showPanel('create')">create_event()</button>
+    <button id="btn-list" class="btn btn-primary" onclick="showPanel('list')">All events</button>
+    <button id="btn-create" class="btn btn-ghost" onclick="showPanel('create')">Create event</button>
 </div>
 
 <div id="panel-list">
-    <div id="events-status" class="error-line" style="display:none;"></div>
-    <div id="events-output" class="code-block">// loading events...</div>
+    <div id="events-status" class="error-line" role="alert" style="display:none;"></div>
+    <div id="events-output" class="grid grid-cards"><p class="muted state-msg">Loading events…</p></div>
 </div>
 
 <div id="panel-create" style="display:none;">
-    <div id="create-error" class="error-line" style="display:none;"></div>
+    <div class="form-panel">
+        <h2>Create an event</h2>
+        <p class="muted">Add the details below. You can set up seats on the event page afterwards.</p>
 
-    <form id="create-event-form" class="form-block">
-        <div class="field">
-            <label for="title">title</label>
-            <input type="text" id="title" name="title" placeholder="Concert Night" required minlength="3" maxlength="100">
-        </div>
-        <div class="field">
-            <label for="description">description</label>
-            <input type="text" id="description" name="description" placeholder="A night of live music..." required minlength="10" maxlength="1000">
-        </div>
-        <div class="field">
-            <label for="venue_name">venue_name</label>
-            <input type="text" id="venue_name" name="venue_name" placeholder="City Arena" required minlength="2" maxlength="100">
-        </div>
-        <div class="field">
-            <label for="venue_address">venue_address</label>
-            <input type="text" id="venue_address" name="venue_address" placeholder="123 Main St, Dehradun" required minlength="5" maxlength="200">
-        </div>
-        <div class="field">
-            <label for="start_time">start_time</label>
-            <input type="datetime-local" id="start_time" name="start_time" required>
-        </div>
-        <div class="field">
-            <label for="end_time">end_time</label>
-            <input type="datetime-local" id="end_time" name="end_time" required>
-        </div>
-        <button type="submit" class="btn btn-primary">submit()</button>
-    </form>
+        <div id="create-error" class="error-line" role="alert" style="display:none;"></div>
+
+        <form id="create-event-form">
+            <div class="field">
+                <label for="title">Title</label>
+                <input type="text" id="title" name="title" placeholder="Concert Night" required minlength="3" maxlength="100">
+            </div>
+            <div class="field">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" placeholder="A night of live music…" required minlength="10" maxlength="1000"></textarea>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label for="venue_name">Venue name</label>
+                    <input type="text" id="venue_name" name="venue_name" placeholder="City Arena" required minlength="2" maxlength="100">
+                </div>
+                <div class="field">
+                    <label for="venue_address">Venue address</label>
+                    <input type="text" id="venue_address" name="venue_address" placeholder="123 Main Street, City" required minlength="5" maxlength="200">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="field">
+                    <label for="start_time">Starts</label>
+                    <input type="datetime-local" id="start_time" name="start_time" required>
+                </div>
+                <div class="field">
+                    <label for="end_time">Ends</label>
+                    <input type="datetime-local" id="end_time" name="end_time" required>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">Create event</button>
+        </form>
+    </div>
 </div>
 
 <script>
 const EVENTS_LIST_URL = '/api/v1/event/get-all';   // confirm this matches your real route
 const EVENTS_CREATE_URL = '/api/v1/event/create';
+
+function esc(v) {
+    return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+}
+
+function fmtTime(d) {
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
 
 function showPanel(which) {
     document.getElementById('panel-list').style.display = which === 'list' ? 'block' : 'none';
@@ -66,33 +86,47 @@ async function loadEvents() {
     const output = document.getElementById('events-output');
     const statusBox = document.getElementById('events-status');
     statusBox.style.display = 'none';
-    output.textContent = '// loading events...';
+    output.innerHTML = '<p class="muted state-msg">Loading events…</p>';
 
     try {
         const res = await fetch(EVENTS_LIST_URL, { credentials: 'same-origin' });
         if (!res.ok) {
-            statusBox.textContent = '// error: could not load events (' + res.status + ')';
+            statusBox.textContent = 'Could not load events (' + res.status + ').';
             statusBox.style.display = 'block';
             output.textContent = '';
             return;
         }
         const events = await res.json();
         if (!events.length) {
-            output.textContent = '// no events yet';
+            output.innerHTML =
+                '<div class="empty-state"><h3>No events yet</h3>' +
+                '<p class="muted">Check back soon, or create the first one.</p></div>';
             return;
         }
         output.innerHTML = events.map(ev => {
             const id = ev.event_id || ev.id;   // confirm which field your get-all response actually uses
+            const start = new Date(ev.start_time);
+            const end = ev.end_time ? new Date(ev.end_time) : null;
+            const day = start.toLocaleDateString(undefined, { day: 'numeric' });
+            const month = start.toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
+            const weekday = start.toLocaleDateString(undefined, { weekday: 'long' });
+            const time = fmtTime(start) + (end ? ' to ' + fmtTime(end) : '');
             return (
-                '<a class="event-row" href="/events/' + id + '">' +
-                '<span class="kw">event</span> ' +
-                '<span class="str">"' + ev.title + '"</span> ' +
-                '<span class="c">// ' + ev.venue_name + ' — ' + new Date(ev.start_time).toLocaleString() + '</span>' +
+                '<a class="card event-card" href="/events/' + esc(id) + '">' +
+                    '<div class="event-date"><span class="event-day">' + esc(day) + '</span>' +
+                    '<span class="event-month">' + esc(month) + '</span></div>' +
+                    '<div class="card-body">' +
+                        '<h3>' + esc(ev.title) + '</h3>' +
+                        '<p class="event-line">' + esc(ev.venue_name) + '</p>' +
+                        '<p class="event-line">' + esc(weekday) + ', ' + esc(time) + '</p>' +
+                        (ev.description ? '<p class="event-desc">' + esc(ev.description) + '</p>' : '') +
+                    '</div>' +
+                    '<div class="card-foot"><span class="card-link">View event</span></div>' +
                 '</a>'
             );
         }).join('');
     } catch (err) {
-        statusBox.textContent = '// error: network error while loading events';
+        statusBox.textContent = 'Network error while loading events.';
         statusBox.style.display = 'block';
         output.textContent = '';
     }
@@ -114,7 +148,7 @@ document.getElementById('create-event-form').addEventListener('submit', async (e
     };
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'submitting...';
+    submitBtn.textContent = 'Creating…';
     errorBox.style.display = 'none';
 
     try {
@@ -132,20 +166,20 @@ document.getElementById('create-event-form').addEventListener('submit', async (e
         }
 
         const data = await res.json();
-        let message = 'could not create event';
+        let message = 'Could not create event.';
         if (data.error && Array.isArray(data.error) && data.error.length > 0) {
             message = data.error[0].msg || message;
         } else if (data.detail) {
             message = typeof data.detail === 'string' ? data.detail : message;
         }
-        errorBox.textContent = '// error: ' + message;
+        errorBox.textContent = message;
         errorBox.style.display = 'block';
     } catch (err) {
-        errorBox.textContent = '// error: network error, please try again';
+        errorBox.textContent = 'Network error. Check your connection and try again.';
         errorBox.style.display = 'block';
     } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'submit()';
+        submitBtn.textContent = 'Create event';
     }
 });
 
