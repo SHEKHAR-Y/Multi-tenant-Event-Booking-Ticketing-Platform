@@ -3,73 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}events.booking{% endblock %}</title>
+    <title>{% block title %}Marquee{% endblock %}</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Text:ital,wght@0,400;0,700;1,400&family=Source+Sans+3:wght@400;500;600&display=swap">
     <link rel="stylesheet" href="/static/style.css">
+    {% block head_extra %}{% endblock %}
 </head>
 <body>
-    <div class="window">
-        <div class="titlebar">
-            <div class="traffic-lights">
-                <span class="dot dot-red"></span>
-                <span class="dot dot-yellow"></span>
-                <span class="dot dot-green"></span>
-            </div>
-            <div class="titlebar-path">event-booking-platform — {% block filename %}home.html{% endblock %}</div>
-            <div class="titlebar-spacer"></div>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="/" class="brand" aria-label="Marquee home">
+                <span class="brand-mark" aria-hidden="true"></span>
+                <span class="brand-name">Marquee</span>
+            </a>
+
+            <button class="nav-toggle" id="nav-toggle" type="button"
+                    aria-expanded="false" aria-controls="site-nav" aria-label="Toggle menu">
+                <span></span><span></span><span></span>
+            </button>
+
+            <nav class="site-nav" id="site-nav" aria-label="Main">
+                <div class="nav-primary">
+                    <a href="/" class="nav-link {% block tab_home %}{% endblock %}">Home</a>
+                    <a href="/events" class="nav-link {% block tab_events %}{% endblock %}">Events</a>
+                </div>
+
+                <div class="nav-account">
+                    {% if user %}
+                        <span class="nav-user" title="{{ user.email }}">{{ user.email }}</span>
+                        <a href="/refresh" id="refresh-session-btn" class="nav-link">Refresh session</a>
+                        <a href="/api/v1/logout" id="logout-btn" class="btn btn-ghost btn-sm">Log out</a>
+                    {% else %}
+                        <a href="/login" class="nav-link">Log in</a>
+                        <a href="/register" class="btn btn-primary btn-sm">Create account</a>
+                    {% endif %}
+                </div>
+            </nav>
         </div>
+    </header>
 
-        <div class="tabstrip">
-            <a href="/" class="tab {% block tab_home %}{% endblock %}">home.html</a>
-            <a href="/events" class="tab {% block tab_events %}{% endblock %}">events.html</a>
-            <div class="tabstrip-spacer"></div>
-            {% if user %}
-                <span class="tab tab-user">{{ user.email }}</span>
-                <a href="/api/v1/logout" id="logout-btn" class="tab tab-action">logout()</a>
-                <a href="/refresh" id="refresh-session-btn" class="tab tab-action">refresh_session()</a>
+    <main id="main" class="site-main">
+        <div class="container">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
 
-            {% else %}
-                <a href="/register" class="tab">register()</a>
-                <a href="/login" class="tab tab-action">login()</a>
-            {% endif %}
-            <script>
-                const logoutButton = document.getElementById("logout-btn");
+    <footer class="site-footer">
+        <div class="container footer-inner">
+            <div class="footer-brand">
+                <span class="brand-name">Marquee</span>
+                <p>Find an event, pick your seats, and book in minutes.</p>
+            </div>
+            <nav class="footer-links" aria-label="Footer">
+                <a href="/">Home</a>
+                <a href="/events">Browse events</a>
+                {% if user %}
+                    <a href="/refresh">Refresh session</a>
+                {% else %}
+                    <a href="/login">Log in</a>
+                    <a href="/register">Create account</a>
+                {% endif %}
+            </nav>
+        </div>
+        <div class="footer-base">
+            <div class="container">&copy; Marquee. All rights reserved.</div>
+        </div>
+    </footer>
 
-                if (logoutButton) {
-                    logoutButton.addEventListener("click", async (event) => {
-                    event.preventDefault();
+    <script>
+        // Mobile menu
+        (function () {
+            const toggle = document.getElementById("nav-toggle");
+            const nav = document.getElementById("site-nav");
+            if (!toggle || !nav) return;
+            toggle.addEventListener("click", function () {
+                const open = nav.classList.toggle("is-open");
+                toggle.setAttribute("aria-expanded", open ? "true" : "false");
+            });
+        })();
 
-                    try {
-                        const res = await fetch("/api/v1/logout", {
-                            method: "GET",
-                            credentials: "same-origin"
-                        });
-                    
-                        if (res.status === 200) {
-                            window.location.href = "/";
-                        }
-                    } catch (err) {
-                        console.error("Logout failed:", err);
-                    }
+        // Logout (unchanged behaviour: GET /api/v1/logout, then go home on 200)
+        const logoutButton = document.getElementById("logout-btn");
+
+        if (logoutButton) {
+            logoutButton.addEventListener("click", async (event) => {
+                event.preventDefault();
+
+                try {
+                    const res = await fetch("/api/v1/logout", {
+                        method: "GET",
+                        credentials: "same-origin"
                     });
-                }    
-            </script>
-        </div>
 
-        <div class="editor">
-            <div class="gutter">
-                {% for i in range(1, 31) %}<span>{{ i }}</span>{% endfor %}
-            </div>
-            <div class="canvas">
-                {% block content %}{% endblock %}
-            </div>
-        </div>
-
-        <div class="statusbar">
-            <span>main</span>
-            <span class="statusbar-spacer"></span>
-            <span>UTF-8</span>
-            <span>FastAPI + Jinja2</span>
-        </div>
-    </div>
+                    if (res.status === 200) {
+                        window.location.href = "/";
+                    }
+                } catch (err) {
+                    console.error("Logout failed:", err);
+                }
+            });
+        }
+    </script>
+    {% block scripts %}{% endblock %}
 </body>
 </html>

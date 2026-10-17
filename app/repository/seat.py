@@ -11,11 +11,16 @@ class SeatRepository:
         self.db = db
 
     async def check_seats_available(self, ids: list[UUID]) -> bool:
+        # by chance empty list passed then return false
+        if len(ids) == 0:
+            return False
+
         number_of_seats = len(ids)
         statement = select(Seat).where(Seat.id.in_(ids)).with_for_update()
         result = await self.db.scalars(statement)
 
         seats = result.all()
+
         
 
         if number_of_seats != len(seats):

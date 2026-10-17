@@ -1,31 +1,84 @@
 {% extends "base.html" %}
 
-{% block filename %}home.html{% endblock %}
+{% block title %}Marquee – Find events and book your seats{% endblock %}
 {% block tab_home %}tab-active{% endblock %}
 
 {% block content %}
-<pre class="code-block"><span class="c">// event-booking-platform</span>
-<span class="c">// a place to find events and book your seat</span>
-<span class="c">// before someone else does.</span>
+{# Preview seat pattern: a = available, b = booked, l = held, s = selected #}
+{% set seat_class = {'a': 'available', 'b': 'booked', 'l': 'locked', 's': 'available seat-selected'} %}
+{% set preview_rows = [
+    ('A', 'bbaaaabb'),
+    ('B', 'baaalaab'),
+    ('C', 'aaasslaa'),
+    ('D', 'aaaaaaaa'),
+    ('E', 'aablaaaa')
+] %}
 
-<span class="kw">const</span> <span class="var">platform</span> = {
-  <span class="prop">events</span>: <span class="str">"browse & book"</span>,
-  <span class="prop">seats</span>: <span class="str">"reserved in real time"</span>,
-  <span class="prop">access</span>: <span class="str">"login is pending"</span>,
-};
+<section class="hero">
+    <div class="hero-copy">
+        <h1>Pick your seat before someone else does.</h1>
+        <p class="lead">Browse upcoming events, see which seats are open right now, and book yours in a few steps.</p>
+        <div class="actions">
+            <a href="/events" class="btn btn-primary btn-lg">Browse events</a>
+            {% if not user %}
+                <a href="/login" class="btn btn-ghost btn-lg">Log in</a>
+            {% endif %}
+        </div>
+    </div>
 
-<span class="c">// $ get started</span>
-<span class="prompt">&gt; <span class="cursor">_</span></span>
+    <div class="hero-panel" aria-hidden="true">
+        <div class="stage">Stage</div>
+        <div class="seat-preview">
+            {% for label, pattern in preview_rows %}
+            <div class="seat-row">
+                <span class="seat-row-label">{{ label }}</span>
+                <div class="seat-row-seats">
+                    {% for ch in pattern %}
+                    <div class="seat seat-{{ seat_class[ch] }}">{{ loop.index }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="seat-legend">
+            <span><i class="seat-dot seat-dot-available"></i>Available</span>
+            <span><i class="seat-dot seat-dot-selected"></i>Selected</span>
+            <span><i class="seat-dot seat-dot-locked"></i>Held</span>
+            <span><i class="seat-dot seat-dot-booked"></i>Booked</span>
+        </div>
+    </div>
+</section>
 
-<span class="actions">
-  {% if user %}
-    <span class="tab tab-user">{{ user.email }}</span>
-    <a href="/api/v1/logout" class="tab tab-action">logout()</a>
-  {% else %}
-    <a href="/login" class="btn btn-primary">login()</a>
-    <a href="/events" class="btn btn-ghost">browse_events()</a>
-  {% endif %}
-  
-</span>
-</pre>
+<section class="section">
+    <div class="section-head">
+        <h2>How booking works</h2>
+    </div>
+    <ol class="steps">
+        <li class="step">
+            <h3>Choose an event</h3>
+            <p>Browse what's on and open the event you want to attend.</p>
+        </li>
+        <li class="step">
+            <h3>Select your seats</h3>
+            <p>The seat map shows what's open, held, or already booked as it happens.</p>
+        </li>
+        <li class="step">
+            <h3>Confirm your booking</h3>
+            <p>Review your seats and total, then book. You'll need to be logged in.</p>
+        </li>
+    </ol>
+</section>
+
+{% if not user %}
+<section class="cta-band">
+    <div>
+        <h2>Ready to book your first event?</h2>
+        <p>Create an account to reserve seats, or log in if you already have one.</p>
+    </div>
+    <div class="actions">
+        <a href="/register" class="btn btn-primary">Create account</a>
+        <a href="/login" class="btn btn-ghost">Log in</a>
+    </div>
+</section>
+{% endif %}
 {% endblock %}

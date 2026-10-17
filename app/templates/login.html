@@ -1,27 +1,31 @@
 {% extends "base.html" %}
 
-{% block filename %}login.html{% endblock %}
+{% block title %}Log in – Marquee{% endblock %}
 {% block tab_home %}{% endblock %}
 
 {% block content %}
-<pre class="code-block"><span class="c">// auth.login()</span>
-<span class="c">// enter your credentials to continue</span>
-</pre>
+<div class="auth-wrap">
+    <div class="auth-card">
+        <h1>Welcome back</h1>
+        <p class="auth-sub">Log in to continue booking.</p>
 
-<div id="error-box" class="error-line" style="display:none;"></div>
+        <div id="error-box" class="error-line" role="alert" style="display:none;"></div>
 
-<form id="login-form" class="form-block">
-    <div class="field">
-        <label for="username">email</label>
-        <input type="email" id="username" name="username" placeholder="you@example.com" required autofocus>
+        <form id="login-form" class="form-block">
+            <div class="field">
+                <label for="username">Email</label>
+                <input type="email" id="username" name="username" placeholder="you@example.com" autocomplete="username" required autofocus>
+            </div>
+            <div class="field">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" autocomplete="current-password" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Log in</button>
+        </form>
+
+        <p class="auth-foot">New here? <a href="/register">Create an account</a></p>
     </div>
-    <div class="field">
-        <label for="password">password</label>
-        <input type="password" id="password" name="password" placeholder="••••••••" required>
-    </div>
-    <button type="submit" class="btn btn-primary">login()</button>
-    <a href="/register" class="btn btn-ghost">register()</a>
-</form>
+</div>
 
 <script>
 document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -35,7 +39,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     body.append('password', form.password.value);
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'logging in...';
+    submitBtn.textContent = 'Logging in…';
 
     try {
         const res = await fetch('/api/v1/login', {
@@ -51,20 +55,20 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
         }
 
         const data = await res.json();
-        let message = 'invalid email or password';
+        let message = 'Invalid email or password.';
         if (data.error && Array.isArray(data.error) && data.error.length > 0) {
             message = data.error[0].msg || message;
         } else if (data.detail) {
             message = typeof data.detail === 'string' ? data.detail : message;
         }
-        errorBox.textContent = '// error: ' + message;
+        errorBox.textContent = message;
         errorBox.style.display = 'block';
     } catch (err) {
-        errorBox.textContent = '// error: network error, please try again';
+        errorBox.textContent = 'Network error. Check your connection and try again.';
         errorBox.style.display = 'block';
     } finally {
         submitBtn.disabled = false;
-        submitBtn.textContent = 'login()';
+        submitBtn.textContent = 'Log in';
     }
 });
 </script>

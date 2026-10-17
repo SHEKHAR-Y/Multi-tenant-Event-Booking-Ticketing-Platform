@@ -1,50 +1,70 @@
 {% extends "base.html" %}
 
-{% block filename %}event_detail.html{% endblock %}
+{% block title %}Event – Marquee{% endblock %}
 {% block tab_events %}tab-active{% endblock %}
 
 {% block content %}
-<pre class="code-block"><span class="c">// events.detail(<span class="str">"{{ event_id }}"</span>)</span>
-</pre>
+<a href="/events" class="back-link">All events</a>
 
-<div id="event-status" class="error-line" style="display:none;"></div>
-<div id="event-info" class="code-block">// loading event...</div>
+<div id="event-status" class="error-line" role="alert" style="display:none;"></div>
+<div id="event-info" class="event-head"><p class="muted">Loading event…</p></div>
 
-<div class="panel-switch">
-    <button id="btn-seats" class="btn btn-primary" onclick="loadSeats()">select_seats()</button>
-    <button id="btn-add-seats" class="btn btn-ghost" onclick="toggleAddSeats()" style="display:none;">add_seats()</button>
-</div>
+<div class="split">
+    <section class="panel seat-card" aria-labelledby="seats-heading">
+        <div class="section-head">
+            <h2 id="seats-heading">Choose your seats</h2>
+            <div class="toolbar">
+                <button id="btn-seats" class="btn btn-ghost btn-sm" onclick="loadSeats()">Refresh seats</button>
+                <button id="btn-add-seats" class="btn btn-ghost btn-sm" onclick="toggleAddSeats()" style="display:none;">Add seats</button>
+            </div>
+        </div>
 
-<div id="panel-add-seats" class="add-seats-panel" style="display:none;">
-    <pre class="code-block"><span class="c">// one line per row — seats are generated as 1..N in each row</span></pre>
-    <div id="add-seats-status" class="book-status" style="display:none;"></div>
-    <div id="row-configs"></div>
-    <div id="add-seats-preview" class="seat-summary-title"></div>
-    <button type="button" class="btn btn-ghost btn-book" onclick="addRowConfig()">+ add_row()</button>
-    <button id="btn-submit-seats" type="button" class="btn btn-primary btn-book" onclick="submitSeats()">create_seats()</button>
-</div>
+        <div id="panel-add-seats" class="add-seats-panel" style="display:none;">
+            <h3>Add seats</h3>
+            <p class="muted">One line per row. Seats are numbered 1 to N in each row.</p>
+            <div id="add-seats-status" class="book-status" style="display:none;"></div>
+            <div id="row-configs"></div>
+            <div id="add-seats-preview" class="hint"></div>
+            <div class="actions">
+                <button type="button" class="btn btn-ghost btn-book" onclick="addRowConfig()">Add row</button>
+                <button id="btn-submit-seats" type="button" class="btn btn-primary btn-book" onclick="submitSeats()">Create seats</button>
+            </div>
+        </div>
 
-<div id="seats-status" class="error-line" style="display:none;"></div>
+        <div id="seats-status" class="error-line" style="display:none;"></div>
 
-<div id="seat-legend" class="seat-legend" style="display:none;">
-    <span><span class="seat-dot seat-dot-available"></span>available</span>
-    <span><span class="seat-dot seat-dot-locked"></span>locked</span>
-    <span><span class="seat-dot seat-dot-booked"></span>booked</span>
-    <span><span class="seat-dot seat-dot-selected"></span>selected</span>
-</div>
+        <div id="seat-stage" class="stage" style="display:none;">Stage</div>
 
-<div id="seat-map" class="seat-map"></div>
+        <div id="seat-legend" class="seat-legend" style="display:none;">
+            <span><span class="seat-dot seat-dot-available"></span>Available</span>
+            <span><span class="seat-dot seat-dot-selected"></span>Selected</span>
+            <span><span class="seat-dot seat-dot-locked"></span>Held</span>
+            <span><span class="seat-dot seat-dot-booked"></span>Booked</span>
+        </div>
 
-<div id="book-status" class="book-status" style="display:none;"></div>
+        <div id="seat-map" class="seat-map"></div>
+    </section>
 
-<div id="seat-summary" class="seat-summary" style="display:none;">
-    <div class="seat-summary-title">// selected seats</div>
-    <ul id="summary-list" class="seat-summary-list"></ul>
-    <div id="summary-total" class="seat-summary-total"></div>
-</div>
+    <aside class="panel booking-panel" aria-labelledby="booking-heading">
+        <h2 id="booking-heading">Your booking</h2>
+        <p id="summary-empty" class="muted">Seats you select will appear here.</p>
 
-<div id="book-actions" class="book-actions" style="display:none;">
-    <button id="btn-book" type="button" class="btn btn-primary btn-book" onclick="bookSeats()" disabled>book_seats()</button>
+        <div id="seat-summary" class="seat-summary" style="display:none;">
+            <div class="seat-summary-title">Selected seats</div>
+            <ul id="summary-list" class="seat-summary-list"></ul>
+            <div id="summary-total" class="seat-summary-total"></div>
+        </div>
+
+        <div id="book-status" class="book-status" role="status" style="display:none;"></div>
+
+        <div id="book-actions" class="book-actions" style="display:none;">
+            <button id="btn-book" type="button" class="btn btn-primary btn-block btn-book" onclick="bookSeats()" disabled>Book seats</button>
+        </div>
+
+        {% if not user %}
+        <p class="info-line booking-note">You need to <a href="/login">log in</a> to book seats.</p>
+        {% endif %}
+    </aside>
 </div>
 
 <script>
@@ -54,11 +74,20 @@ const SEATS_URL = '/api/v1/event-seats/' + EVENT_ID;
 const BOOK_URL = '/api/v1/book-seats';
 const CREATE_SEATS_URL = '/api/v1/event/create-seats';
 const CURRENT_USER_ID = "{{ user.id if user else '' }}";
+const CURRENCY_SYMBOL = '';   // e.g. '₹' or '€' if you want a symbol in front of prices
 
 let seats = [];
 let isOwner = false;
 let seatsExist = null;   // null = not checked yet
 const selectedSeats = new Map();   // seat_id -> seat object
+
+function esc(v) {
+    return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, c => (
+        { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+}
+
+function money(n) { return CURRENCY_SYMBOL + Number(n).toFixed(2); }
 
 async function loadEventInfo() {
     const info = document.getElementById('event-info');
@@ -67,7 +96,7 @@ async function loadEventInfo() {
     try {
         const res = await fetch(EVENT_DETAIL_URL, { credentials: 'same-origin' });
         if (!res.ok) {
-            statusBox.textContent = '// error: could not load event (' + res.status + ')';
+            statusBox.textContent = 'Could not load event (' + res.status + ').';
             statusBox.style.display = 'block';
             info.textContent = '';
             return;
@@ -77,16 +106,27 @@ async function loadEventInfo() {
         // backend's ownership check decide
         isOwner = !ev.organizer_id || String(ev.organizer_id) === CURRENT_USER_ID;
         updateAddSeatsVisibility();
+
+        const start = new Date(ev.start_time);
+        const end = new Date(ev.end_time);
+        const dateOpts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+        const timeOpts = { hour: 'numeric', minute: '2-digit' };
+        const sameDay = start.toDateString() === end.toDateString();
+        const when = sameDay
+            ? esc(start.toLocaleDateString(undefined, dateOpts)) + '<br>' +
+              esc(start.toLocaleTimeString([], timeOpts) + ' to ' + end.toLocaleTimeString([], timeOpts))
+            : esc(start.toLocaleString()) + '<br>to ' + esc(end.toLocaleString());
+
+        document.title = ev.title + ' – Marquee';
         info.innerHTML =
-            '<span class="kw">const</span> <span class="var">event</span> = {\n' +
-            '  <span class="prop">title</span>: <span class="str">"' + ev.title + '"</span>,\n' +
-            '  <span class="prop">description</span>: <span class="str">"' + ev.description + '"</span>,\n' +
-            '  <span class="prop">venue</span>: <span class="str">"' + ev.venue_name + ', ' + ev.venue_address + '"</span>,\n' +
-            '  <span class="prop">start_time</span>: <span class="str">"' + new Date(ev.start_time).toLocaleString() + '"</span>,\n' +
-            '  <span class="prop">end_time</span>: <span class="str">"' + new Date(ev.end_time).toLocaleString() + '"</span>,\n' +
-            '};';
+            '<h1>' + esc(ev.title) + '</h1>' +
+            '<dl class="event-facts">' +
+                '<div><dt>When</dt><dd>' + when + '</dd></div>' +
+                '<div><dt>Where</dt><dd>' + esc(ev.venue_name) + '<br>' + esc(ev.venue_address) + '</dd></div>' +
+            '</dl>' +
+            '<p class="event-about">' + esc(ev.description) + '</p>';
     } catch (err) {
-        statusBox.textContent = '// error: network error while loading event';
+        statusBox.textContent = 'Network error while loading event.';
         statusBox.style.display = 'block';
     }
 }
@@ -122,6 +162,10 @@ function renderSeats() {
         label.textContent = rowKey;
         rowDiv.appendChild(label);
 
+        const seatsWrap = document.createElement('div');
+        seatsWrap.className = 'seat-row-seats';
+        rowDiv.appendChild(seatsWrap);
+
         rowSeats.forEach(seat => {
             const status = seatStatus(seat);
             const isSelected = selectedSeats.has(seatId(seat));
@@ -129,14 +173,15 @@ function renderSeats() {
             btn.type = 'button';
             btn.className = 'seat ' + (isSelected ? 'seat-selected' : 'seat-' + status);
             btn.textContent = seatNumber(seat);   // always the seat's real number
-            btn.title = seatRow(seat) + seatNumber(seat) + ' — ' + seatCategory(seat) + ' — ' + seatPrice(seat).toFixed(2);
+            btn.title = seatRow(seat) + seatNumber(seat) + ' — ' + seatCategory(seat) + ' — ' + money(seatPrice(seat));
+            btn.setAttribute('aria-label', 'Row ' + seatRow(seat) + ', seat ' + seatNumber(seat) + ', ' + status);
 
             if (status !== 'available') {
                 btn.disabled = true;
             } else {
                 btn.addEventListener('click', () => toggleSeat(seat));
             }
-            rowDiv.appendChild(btn);
+            seatsWrap.appendChild(btn);
         });
 
         map.appendChild(rowDiv);
@@ -156,6 +201,7 @@ function toggleSeat(seat) {
 
 function renderSummary() {
     const summary = document.getElementById('seat-summary');
+    const empty = document.getElementById('summary-empty');
     const list = document.getElementById('summary-list');
     const totalEl = document.getElementById('summary-total');
 
@@ -163,10 +209,12 @@ function renderSummary() {
 
     if (selectedSeats.size === 0) {
         summary.style.display = 'none';
+        empty.style.display = 'block';
         return;
     }
 
     summary.style.display = 'block';
+    empty.style.display = 'none';
     list.innerHTML = '';
     let total = 0;
 
@@ -174,12 +222,13 @@ function renderSummary() {
         total += seatPrice(seat);
         const li = document.createElement('li');
         li.innerHTML =
-            '<span class="row">' + seatRow(seat) + seatNumber(seat) + '</span> — ' +
-            seatCategory(seat) + ' — <span class="price">' + seatPrice(seat).toFixed(2) + '</span>';
+            '<span class="row">' + esc(seatRow(seat)) + esc(seatNumber(seat)) + '</span>' +
+            '<span class="cat">' + esc(seatCategory(seat)) + '</span>' +
+            '<span class="price">' + esc(money(seatPrice(seat))) + '</span>';
         list.appendChild(li);
     });
 
-    totalEl.textContent = 'total: ' + total.toFixed(2);
+    totalEl.innerHTML = '<span>Total</span><span>' + esc(money(total)) + '</span>';
 }
 
 function updateBookButton() {
@@ -189,14 +238,14 @@ function updateBookButton() {
 
 function showBookStatus(message, ok) {
     const box = document.getElementById('book-status');
-    box.textContent = '// ' + (ok ? 'success: ' : 'error: ') + message;
+    box.textContent = message;
     box.className = 'book-status ' + (ok ? 'success-line' : 'error-line');
     box.style.display = 'block';
 }
 
 async function bookSeats() {
     if (selectedSeats.size === 0) {
-        showBookStatus('select at least one seat first', false);
+        showBookStatus('Select at least one seat first.', false);
         return;
     }
 
@@ -209,7 +258,7 @@ async function bookSeats() {
 
     document.getElementById('book-status').style.display = 'none';
     bookBtn.disabled = true;               // blocks double-click double-submit
-    bookBtn.textContent = 'booking...';
+    bookBtn.textContent = 'Booking…';
 
     try {
         const res = await fetch(BOOK_URL, {
@@ -225,12 +274,12 @@ async function bookSeats() {
         }
 
         if (res.status === 201) {
-            showBookStatus('booked ' + bookedCount + ' seat' + (bookedCount > 1 ? 's' : ''), true);
+            showBookStatus('Booked ' + bookedCount + ' seat' + (bookedCount > 1 ? 's' : '') + '.', true);
             await loadSeats();             // refresh so booked seats turn grey
             return;
         }
 
-        let message = 'could not book seats';
+        let message = 'Could not book seats.';
         try {
             const data = await res.json();
             if (data.error && Array.isArray(data.error) && data.error.length > 0) {
@@ -243,9 +292,9 @@ async function bookSeats() {
         showBookStatus(message, false);
         if (res.status === 409) await loadSeats();   // someone else took a seat — show fresh statuses
     } catch (err) {
-        showBookStatus('network error, please try again', false);
+        showBookStatus('Network error. Please try again.', false);
     } finally {
-        bookBtn.textContent = 'book_seats()';
+        bookBtn.textContent = 'Book seats';
         updateBookButton();
     }
 }
@@ -262,36 +311,25 @@ function extractError(data, fallback) {
 
 function showAddSeatsStatus(message, ok) {
     const box = document.getElementById('add-seats-status');
-    box.textContent = '// ' + (ok ? 'success: ' : 'error: ') + message;
+    box.textContent = message;
     box.className = 'book-status ' + (ok ? 'success-line' : 'error-line');
     box.style.display = 'block';
 }
 
-// add_seats() is for the organizer, and only while the event has no seats yet
+// add seats is for the organizer, and only while the event has no seats yet
 function updateAddSeatsVisibility() {
     const show = isOwner && seatsExist === false;
-    document.getElementById('btn-add-seats').style.display = show ? 'inline-block' : 'none';
+    document.getElementById('btn-add-seats').style.display = show ? 'inline-flex' : 'none';
     if (!show) {
         document.getElementById('panel-add-seats').style.display = 'none';
     }
-}
-
-// quiet check on page load so the button state is right before anyone clicks select_seats()
-async function checkSeatsExist() {
-    try {
-        const res = await fetch(SEATS_URL, { credentials: 'same-origin' });
-        if (!res.ok) return;   // unknown: the button stays hidden
-        const list = await res.json();
-        seatsExist = Array.isArray(list) && list.length > 0;
-    } catch (_) { /* leave seatsExist as null */ }
-    updateAddSeatsVisibility();
 }
 
 function toggleAddSeats() {
     const panel = document.getElementById('panel-add-seats');
     const open = panel.style.display === 'none';
     panel.style.display = open ? 'block' : 'none';
-    document.getElementById('btn-add-seats').className = open ? 'btn btn-primary' : 'btn btn-ghost';
+    document.getElementById('btn-add-seats').className = open ? 'btn btn-primary btn-sm' : 'btn btn-ghost btn-sm';
 }
 
 function updateAddSeatsPreview() {
@@ -305,18 +343,18 @@ function updateAddSeatsPreview() {
         }
     });
     document.getElementById('add-seats-preview').textContent =
-        '// will create ' + total + ' seat' + (total === 1 ? '' : 's') +
-        ' across ' + rows + ' row' + (rows === 1 ? '' : 's');
+        'Will create ' + total + ' seat' + (total === 1 ? '' : 's') +
+        ' across ' + rows + ' row' + (rows === 1 ? '' : 's') + '.';
 }
 
 function addRowConfig() {
     const line = document.createElement('div');
     line.className = 'row-config';
     line.innerHTML =
-        '<input type="text" class="rc-row" placeholder="row (A)" maxlength="4">' +
-        '<input type="number" class="rc-count" placeholder="seats" min="1" step="1">' +
-        '<input type="number" class="rc-price" placeholder="price" min="0.01" step="0.01">' +
-        '<button type="button" class="rc-remove" title="remove row">x</button>';
+        '<input type="text" class="rc-row" placeholder="Row (A)" aria-label="Row label" maxlength="4">' +
+        '<input type="number" class="rc-count" placeholder="Seats" aria-label="Number of seats" min="1" step="1">' +
+        '<input type="number" class="rc-price" placeholder="Price" aria-label="Price per seat" min="0.01" step="0.01">' +
+        '<button type="button" class="rc-remove" title="Remove row" aria-label="Remove row">&times;</button>';
     line.querySelector('.rc-remove').addEventListener('click', () => {
         line.remove();
         updateAddSeatsPreview();
@@ -330,7 +368,7 @@ function addRowConfig() {
 function buildSeatsPayload() {
     const MAX_SEATS_PER_REQUEST = 2000;   // client-side sanity cap, not a backend rule
     const lines = document.querySelectorAll('#row-configs .row-config');
-    if (lines.length === 0) return { error: 'add at least one row' };
+    if (lines.length === 0) return { error: 'Add at least one row.' };
 
     const seatsList = [];
     const seenRows = new Set();
@@ -340,10 +378,10 @@ function buildSeatsPayload() {
         const count = parseInt(line.querySelector('.rc-count').value, 10);
         const price = parseFloat(line.querySelector('.rc-price').value);
 
-        if (!row || row.length > 4) return { error: 'row label must be 1 to 4 characters' };
-        if (seenRows.has(row)) return { error: 'row ' + row + ' is listed twice' };
-        if (!Number.isInteger(count) || count < 1) return { error: 'row ' + row + ': seat count must be at least 1' };
-        if (!(price > 0)) return { error: 'row ' + row + ': enter a price above 0' };
+        if (!row || row.length > 4) return { error: 'Row label must be 1 to 4 characters.' };
+        if (seenRows.has(row)) return { error: 'Row ' + row + ' is listed twice.' };
+        if (!Number.isInteger(count) || count < 1) return { error: 'Row ' + row + ': seat count must be at least 1.' };
+        if (!(price > 0)) return { error: 'Row ' + row + ': enter a price above 0.' };
 
         seenRows.add(row);
         for (let n = 1; n <= count; n++) {
@@ -352,7 +390,7 @@ function buildSeatsPayload() {
     }
 
     if (seatsList.length > MAX_SEATS_PER_REQUEST) {
-        return { error: 'too many seats in one request (max ' + MAX_SEATS_PER_REQUEST + ')' };
+        return { error: 'Too many seats in one request (max ' + MAX_SEATS_PER_REQUEST + ').' };
     }
     return { seats: seatsList };
 }
@@ -367,7 +405,7 @@ async function submitSeats() {
     const btn = document.getElementById('btn-submit-seats');
     document.getElementById('add-seats-status').style.display = 'none';
     btn.disabled = true;
-    btn.textContent = 'creating...';
+    btn.textContent = 'Creating…';
 
     try {
         const res = await fetch(CREATE_SEATS_URL, {
@@ -383,39 +421,41 @@ async function submitSeats() {
         }
 
         if (res.ok) {   // not checking for exactly 201: the route's JSONResponse defaults to 200
-            showBookStatus('created ' + built.seats.length + ' seats', true);
+            showBookStatus('Created ' + built.seats.length + ' seats.', true);
             document.getElementById('row-configs').innerHTML = '';
             addRowConfig();
-            await loadSeats();   // shows the new seats, and hides add_seats() since seats now exist
+            await loadSeats();   // shows the new seats, and hides add seats since seats now exist
             return;
         }
 
-        let message = 'could not create seats';
+        let message = 'Could not create seats.';
         try {
             message = extractError(await res.json(), message);
         } catch (_) { /* non-JSON error body, keep default message */ }
         showAddSeatsStatus(message, false);
     } catch (err) {
-        showAddSeatsStatus('network error, please try again', false);
+        showAddSeatsStatus('Network error. Please try again.', false);
     } finally {
         btn.disabled = false;
-        btn.textContent = 'create_seats()';
+        btn.textContent = 'Create seats';
     }
 }
 
 async function loadSeats() {
     const statusBox = document.getElementById('seats-status');
     const legend = document.getElementById('seat-legend');
+    const stage = document.getElementById('seat-stage');
     const btn = document.getElementById('btn-seats');
 
     statusBox.style.display = 'none';
+    statusBox.className = 'error-line';
     btn.disabled = true;
     selectedSeats.clear();
 
     try {
         const res = await fetch(SEATS_URL, { credentials: 'same-origin' });
         if (!res.ok) {
-            statusBox.textContent = '// error: could not load seats (' + res.status + ')';
+            statusBox.textContent = 'Could not load seats (' + res.status + ').';
             statusBox.style.display = 'block';
             document.getElementById('book-actions').style.display = 'none';
             return;
@@ -424,17 +464,23 @@ async function loadSeats() {
         seatsExist = seats.length > 0;
         updateAddSeatsVisibility();
         if (!seats.length) {
-            statusBox.textContent = '// no seats configured for this event yet';
+            statusBox.className = 'info-line';
+            statusBox.textContent = 'No seats have been set up for this event yet.';
             statusBox.style.display = 'block';
+            document.getElementById('seat-map').innerHTML = '';
+            legend.style.display = 'none';
+            stage.style.display = 'none';
             document.getElementById('book-actions').style.display = 'none';
+            renderSummary();
             return;
         }
         legend.style.display = 'flex';
+        stage.style.display = 'block';
         document.getElementById('book-actions').style.display = 'block';
         renderSeats();
         renderSummary();
     } catch (err) {
-        statusBox.textContent = '// error: network error while loading seats';
+        statusBox.textContent = 'Network error while loading seats.';
         statusBox.style.display = 'block';
         document.getElementById('book-actions').style.display = 'none';
     } finally {
@@ -444,6 +490,6 @@ async function loadSeats() {
 
 addRowConfig();
 loadEventInfo();
-checkSeatsExist();
+loadSeats();   // seats now load on page view; Refresh seats re-runs this
 </script>
 {% endblock %}
